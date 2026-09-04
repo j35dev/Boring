@@ -70,7 +70,7 @@ modes, and verification scenarios. This page is the deliberately human-shaped gu
 | [BORING-AUTH-RESET-008](#boring-auth-reset-008) | SHOULD | The new password must satisfy the same policy as normal credential creation |
 | [BORING-AUTH-RESET-009](#boring-auth-reset-009) | SHOULD | Completing a reset must end existing sessions |
 | [BORING-AUTH-RESET-010](#boring-auth-reset-010) | SHOULD | Notify the account owner when the password changes |
-| [BORING-AUTH-RESET-011](#boring-auth-reset-011) | SHOULD | Reset tokens must be stored as securely as passwords |
+| [BORING-AUTH-RESET-011](#boring-auth-reset-011) | SHOULD | Reset-token values at rest must not be recoverable |
 | [BORING-AUTH-RESET-012](#boring-auth-reset-012) | CONSIDER | Treat reset links as secrets during transport |
 | [BORING-AUTH-RESET-013](#boring-auth-reset-013) | CONSIDER | Define the policy for multiple outstanding reset requests |
 | [BORING-AUTH-RESET-014](#boring-auth-reset-014) | SHOULD | Post-reset redirects must not be attacker-controlled |
@@ -165,11 +165,13 @@ The change notification is the account owner's detection signal. Send it to the 
 of record — and keep it inert: no new password, no token, and above all no "click here
 to set a new password" link, which would be a second takeover key.
 
-### BORING-AUTH-RESET-011 — Reset tokens must be stored as securely as passwords (SHOULD)
+### BORING-AUTH-RESET-011 — Reset-token values at rest must not be recoverable (SHOULD)
 
-Hash tokens at rest (a password-hashing function) or keep them in equivalent secret
-infrastructure, each bound to exactly one account. A database dump full of live reset
-tokens turns a breach into immediate takeover, before anyone rotates anything.
+A read-only breach must not yield working tokens: keep only a non-recoverable
+representation (a hash verified by comparison) or equivalent secret
+infrastructure, each bound to exactly one account. Short codes need a slow,
+salted hash plus throttling; high-entropy tokens still must not sit in plaintext
+columns, backups, or logs.
 
 ### BORING-AUTH-RESET-012 — Treat reset links as secrets during transport (CONSIDER)
 

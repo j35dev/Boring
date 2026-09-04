@@ -7,10 +7,10 @@ Direction, not promises. Scope is added only when it can meet the quality bar in
 
 - Philosophy, methodology, taxonomy, and source model
 - JSON schemas for specs, edge cases, and the source registry
-- Five polished specs: password reset, sessions, webhooks, file uploads,
-  input/text validation
+- Six polished specs: password reset, sessions, webhooks, file uploads,
+  input/text validation, pagination
 - Cross-cutting edge-case datasets: Unicode/text, email, date & time, files,
-  numeric boundaries, webhook delivery, authentication state
+  numeric boundaries, webhook delivery, authentication state, pagination traversal
 - A source registry with provenance for every claim
 - Evidence blocks, a full normative audit, and a documented review ledger
 - Repository validation (schemas, IDs, references, evidence, and Markdown examples) in CI
@@ -27,7 +27,6 @@ Candidate domains, researched to the same standard, roughly in this order:
 - authorization basics
 - API keys
 - rate limiting
-- pagination
 - background jobs
 - notifications
 - money (researched properly: minor units, rounding, refunds, tax — see below)

@@ -21,7 +21,8 @@ normalize it.
 If you want to add or modify structured content, work with IDs, schemas, evidence
 locators, levels, applicability, sources, cross-references, and validation. Start with
 the [style guide](docs/style-guide.md), [review policy](docs/review-policy.md), and
-[reviewer guide](docs/reviewer-guide.md), then use Password Reset as the quality model.
+[reviewer guide](docs/reviewer-guide.md), then use Password Reset (security-critical
+flow) and Pagination (ordinary correctness) as the quality models.
 
 ## What we accept
 

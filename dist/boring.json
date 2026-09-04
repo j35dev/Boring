@@ -51,9 +51,21 @@
             "evidence": [
               {
                 "source": "OWASP-FORGOT-PASSWORD",
-                "locator": "Forgot Password Request; User Resets Password; General Security Practices",
+                "locator": "Introduction; Forgot Password Request",
                 "support": "direct",
-                "note": "The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.\n"
+                "note": "Requires a consistent message for existent and non-existent accounts and uniform response time, without behavior differences that allow account discovery; Boring scopes this to unauthenticated reset-request endpoints.\n"
+              },
+              {
+                "source": "OWASP-AUTHENTICATION",
+                "locator": "Authentication and Error Messages — Authentication Responses; Password recovery examples; Error Codes and URLs",
+                "support": "direct",
+                "note": "Requires a generic recovery response regardless of account existence or lock state, with the correct example \"If that email address is in our database...\"; HTTP status codes must not differ even when the displayed message is generic.\n"
+              },
+              {
+                "source": "OWASP-ASVS",
+                "locator": "V6.3.8",
+                "support": "direct",
+                "note": "Registration and forgot-password flows must not allow deducing valid users from error messages, HTTP response codes, or response-time differences.\n"
               }
             ],
             "edge_cases": [
@@ -122,9 +134,9 @@
             "evidence": [
               {
                 "source": "OWASP-FORGOT-PASSWORD",
-                "locator": "Forgot Password Request; User Resets Password; General Security Practices",
+                "locator": "Introduction; General Security Practices",
                 "support": "direct",
-                "note": "The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.\n"
+                "note": "Requires tokens to be randomly generated with a cryptographically safe algorithm and long enough to resist brute force; Boring requires a CSPRNG and threat-model-justified strength without prescribing one universal entropy number.\n"
               }
             ],
             "edge_cases": [],
@@ -182,9 +194,9 @@
             "evidence": [
               {
                 "source": "OWASP-FORGOT-PASSWORD",
-                "locator": "Forgot Password Request; User Resets Password; General Security Practices",
+                "locator": "Introduction",
                 "support": "direct",
-                "note": "The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.\n"
+                "note": "Introduction requires tokens to \"expire after an appropriate period\"; Boring requires a bounded, documented lifetime rejected at completion time, with the bound chosen for the recovery channel and threat model.\n"
               }
             ],
             "edge_cases": [
@@ -240,9 +252,9 @@
             "evidence": [
               {
                 "source": "OWASP-FORGOT-PASSWORD",
-                "locator": "Forgot Password Request; User Resets Password; General Security Practices",
+                "locator": "Introduction; General Security Practices — Invalidated after they have been used",
                 "support": "direct",
-                "note": "The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.\n"
+                "note": "Requires tokens to be single-use and invalidated after use; Boring enforces this under concurrency, so at most one of two simultaneous completions takes effect.\n"
               }
             ],
             "edge_cases": [
@@ -307,9 +319,9 @@
             "evidence": [
               {
                 "source": "OWASP-FORGOT-PASSWORD",
-                "locator": "Forgot Password Request; User Resets Password; General Security Practices",
+                "locator": "Introduction — Do not make a change to the account until a valid token is presented",
                 "support": "direct",
-                "note": "The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.\n"
+                "note": "Prohibits any account change, including lockout, before a valid token is presented; Boring applies this at the mutating completion step, re-checking existence, expiry, use state, and account binding.\n"
               }
             ],
             "edge_cases": [
@@ -368,9 +380,9 @@
             "evidence": [
               {
                 "source": "OWASP-FORGOT-PASSWORD",
-                "locator": "Forgot Password Request; User Resets Password; General Security Practices",
+                "locator": "General Security Practices — Linked to an individual user in the database",
                 "support": "direct",
-                "note": "The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.\n"
+                "note": "Requires each token to resolve to the individual user it was issued for; Boring prohibits client-supplied identifiers from redirecting the credential change to another account.\n"
               }
             ],
             "edge_cases": [
@@ -430,9 +442,15 @@
             "evidence": [
               {
                 "source": "OWASP-FORGOT-PASSWORD",
-                "locator": "Forgot Password Request; User Resets Password; General Security Practices",
+                "locator": "Forgot Password Request — per-account rate limiting / CAPTCHA; URL Tokens — rate limiting token brute force; Account Lockout",
                 "support": "direct",
-                "note": "The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.\n"
+                "note": "Requires abuse controls such as per-account rate limiting or CAPTCHA against inbox flooding and token guessing, while warning that accounts must not be locked out by a forgotten-password attack.\n"
+              },
+              {
+                "source": "NIST-800-63B",
+                "locator": "Rate limiting for authentication failures (throttling guidance)",
+                "support": "derived",
+                "note": "NIST requires rate limiting for authentication events generally; Boring derives the reset-specific application — throttle request and completion without distinguishing known from unknown accounts and without causing lockout — since neither source prescribes one universal reset algorithm.\n"
               }
             ],
             "edge_cases": [
@@ -488,15 +506,20 @@
             ],
             "sources": [
               "OWASP-FORGOT-PASSWORD",
-              "NIST-800-63B",
-              "OWASP-AUTHENTICATION"
+              "NIST-800-63B"
             ],
             "evidence": [
               {
                 "source": "OWASP-FORGOT-PASSWORD",
-                "locator": "Forgot Password Request; User Resets Password; General Security Practices",
+                "locator": "User Resets Password; URL Tokens; PINs — same password policy as elsewhere in the application",
                 "support": "direct",
-                "note": "The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.\n"
+                "note": "Requires the application's existing password policy to be applied at reset completion, including the confirm-twice step; Boring treats reset as password creation with no weakened emergency variant.\n"
+              },
+              {
+                "source": "NIST-800-63B",
+                "locator": "Password verifiers — minimum length (15 single-factor / 8 with MFA), SHOULD allow 64+, SHALL blocklist breached passwords, SHALL NOT impose composition rules",
+                "support": "direct",
+                "note": "Establishes the modern policy baseline Boring references — length plus breach blocklist, no composition rules; the rule still defers to the application's documented policy rather than fixing one universal threshold.\n"
               }
             ],
             "edge_cases": [],
@@ -552,9 +575,15 @@
             "evidence": [
               {
                 "source": "OWASP-FORGOT-PASSWORD",
-                "locator": "Forgot Password Request; User Resets Password; General Security Practices",
+                "locator": "User Resets Password — ask to invalidate all existing sessions or invalidate automatically; do not log the user in automatically",
                 "support": "direct",
-                "note": "The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.\n"
+                "note": "Requires offering or performing session invalidation after reset and prohibits automatic login, since the token holder is not always the account owner.\n"
+              },
+              {
+                "source": "OWASP-ASVS",
+                "locator": "V7.4 Session Termination (7.4.3: option to terminate all other active sessions after a credential change)",
+                "support": "direct",
+                "note": "Requires the ability to terminate other active sessions after an authentication-factor change; Boring applies this to the post-reset flow with an explicit-preserve opt-out.\n"
               }
             ],
             "edge_cases": [
@@ -613,9 +642,15 @@
             "evidence": [
               {
                 "source": "OWASP-FORGOT-PASSWORD",
-                "locator": "Forgot Password Request; User Resets Password; General Security Practices",
+                "locator": "User Resets Password — send an email informing the user the password was reset; do not send the password in the email",
                 "support": "direct",
-                "note": "The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.\n"
+                "note": "Requires a post-reset notification to the user without including the password; Boring extends the inert-notification requirement to tokens and working reset links, which would otherwise be a second takeover key.\n"
+              },
+              {
+                "source": "OWASP-ASVS",
+                "locator": "V6.3.7",
+                "support": "direct",
+                "note": "Requires notifying users after credential resets or username/email changes; Boring scopes this to the address of record held before the reset.\n"
               }
             ],
             "edge_cases": [],
@@ -646,13 +681,14 @@
           },
           {
             "id": "BORING-AUTH-RESET-011",
-            "title": "Reset tokens must be stored as securely as passwords",
+            "title": "Reset-token values at rest must not be recoverable",
             "level": "SHOULD",
             "status": "draft",
-            "statement": "Reset tokens at rest should be protected like credentials — hashed (with a password-hashing function) or stored in an equivalently secured secret store — and each token must be linked to exactly one account.\n",
+            "statement": "Stored reset-token data should not allow recovery of a working token after a read-only breach: keep only a non-recoverable representation (for example a hash verified by comparison on presentation) or in equivalently protected secret infrastructure, with each token bound to exactly one account. Short single-factor codes need a slow, salted hash and throttling because their entropy is low; high-entropy tokens still must not sit in plaintext columns, backups, or logs.\n",
             "why": [
               "A database dump containing live reset tokens converts a data breach into immediate account takeover, before users rotate anything.",
-              "OWASP requires tokens to be stored securely as discussed in the Password Storage Cheat Sheet, and linked to an individual user."
+              "OWASP requires tokens to be stored securely as discussed in the Password Storage Cheat Sheet, and linked to an individual user; the Password Storage sheet describes salted, slow hashing with work factors as the reference mechanism.",
+              "The exact hash construction is an implementation choice for the token's entropy and threat model, which is why this stays SHOULD with an equivalent-protection exception rather than mandating one KDF for every token type."
             ],
             "applies_when": [
               "Reset tokens are persisted."
@@ -674,9 +710,15 @@
             "evidence": [
               {
                 "source": "OWASP-FORGOT-PASSWORD",
-                "locator": "Forgot Password Request; User Resets Password; General Security Practices",
+                "locator": "Introduction — Stored securely; General Security Practices — Stored in a secure manner, as discussed in the Password Storage Cheat Sheet; Linked to an individual user in the database",
                 "support": "direct",
-                "note": "The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.\n"
+                "note": "Directly requires secure storage per the Password Storage guidance plus per-user linkage; Boring interprets \"securely\" as non-recoverable at rest with per-account binding, not as any specific hash algorithm.\n"
+              },
+              {
+                "source": "OWASP-PASSWORD-STORAGE",
+                "locator": "Password Storage — salted, slow hashing (Argon2id, bcrypt, PBKDF2) with work factors; salt and hash stored per credential",
+                "support": "derived",
+                "note": "Provides the reference hashing construction Boring derives token storage from; applied to tokens as a derived interpretation since the sheet targets passwords and Boring allows equivalent secret infrastructure and entropy-appropriate construction.\n"
               }
             ],
             "edge_cases": [],
@@ -724,14 +766,21 @@
               "Third-party assets on the reset page receiving the token via Referer."
             ],
             "sources": [
-              "OWASP-SESSION-MANAGEMENT"
+              "OWASP-SESSION-MANAGEMENT",
+              "OWASP-FORGOT-PASSWORD"
             ],
             "evidence": [
               {
                 "source": "OWASP-SESSION-MANAGEMENT",
-                "locator": "Session ID Properties; Cookies; Session ID Life Cycle; Session Expiration",
+                "locator": "Session Management Implementation — IDs in URLs disclose via links, logs, browser history, bookmarks, Referer header, search engines; Logging — do not include session IDs in logs, log a salted hash instead",
+                "support": "derived",
+                "note": "Documents the URL-secret leakage channels for session identifiers; Boring derives the same treatment for reset tokens in links since a reset URL is likewise a bearer credential, while the delivery decision itself stays product-specific (CONSIDER).\n"
+              },
+              {
+                "source": "OWASP-FORGOT-PASSWORD",
+                "locator": "URL Tokens — HTTPS reset URLs; Referrer-Policy noreferrer to avoid referrer leakage",
                 "support": "direct",
-                "note": "The cited OWASP-SESSION-MANAGEMENT section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.\n"
+                "note": "Directly requires HTTPS reset URLs and a noreferrer Referrer Policy on the reset page; Boring generalizes to auditing all retention channels (logs, analytics, previews) for still-valid tokens.\n"
               }
             ],
             "edge_cases": [
@@ -786,9 +835,9 @@
             "evidence": [
               {
                 "source": "OWASP-FORGOT-PASSWORD",
-                "locator": "Forgot Password Request; User Resets Password; General Security Practices",
-                "support": "direct",
-                "note": "The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.\n"
+                "locator": "Introduction; General Security Practices — single-use and invalidation",
+                "support": "derived",
+                "note": "OWASP requires single-use invalidation but defines no outstanding-token policy; Boring derives the bounded-exposure default (newest-wins) as an operational interpretation, with the enforceable requirement being a documented, enumeration-safe policy.\n"
               }
             ],
             "edge_cases": [
@@ -846,9 +895,9 @@
             "evidence": [
               {
                 "source": "OWASP-WSTG",
-                "locator": "Testing for Unvalidated Redirects and Forwards",
+                "locator": "Testing for Client-side URL Redirect (WSTG-CLNT-04)",
                 "support": "direct",
-                "note": "The cited OWASP-WSTG section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.\n"
+                "note": "Covers open redirection where user-controlled input selects an external target for phishing; Boring applies this to the post-reset redirect parameter with an allowlist or fixed-target requirement.\n"
               }
             ],
             "edge_cases": [],
@@ -3102,6 +3151,638 @@
       }
     },
     {
+      "path": "specs/pagination/spec.yaml",
+      "schema_version": 1,
+      "spec": {
+        "id": "pagination",
+        "title": "Pagination",
+        "domain": "pagination",
+        "summary": "Behavior a correct paginated list must implement: a stable total order, duplicate- and skip-free traversal under concurrent writes, opaque and query-bound cursors, truthful end-of-list signals, enforced page-size bounds, correct backward traversal, and deliberate totals and cursor-lifetime policies. Framework-neutral; ordinary data correctness, not access control.\n",
+        "version": "0.1.0",
+        "status": "draft",
+        "updated": "2026-09-04",
+        "applies_when": [
+          "The application exposes an ordered list that clients fetch in pages across multiple requests (REST, GraphQL, or database-backed listing)."
+        ],
+        "does_not_apply_when": [
+          "The entire result set is always returned in a single response with no paging parameters.",
+          "Pagination is purely presentational over a fixed, immutable in-memory array that never changes between requests (ordering rules still apply if the array can change)."
+        ],
+        "rules": [
+          {
+            "id": "BORING-PAGINATION-001",
+            "title": "Order paged results by a stable total order",
+            "level": "MUST",
+            "status": "draft",
+            "statement": "Paged results must be ordered by an explicit sort whose keys, taken together, uniquely identify each row — including a unique tiebreaker (typically the primary key) whenever the business sort key can tie.\n",
+            "why": [
+              "Without a unique order, page boundaries cut through an undefined sequence and identical requests return different pages.",
+              "Tying sort values (same timestamp, same priority, same name) are the common case, not the exception; the tiebreaker is what makes positions stable.",
+              "SQL guarantees no order without ORDER BY, and different LIMIT/OFFSET subsets then give inconsistent results."
+            ],
+            "applies_when": [
+              "Any paginated query exists."
+            ],
+            "exceptions": [],
+            "failure_modes": [
+              "Paging by created_at alone while hundreds of rows share one timestamp; tied rows duplicate and vanish across pages.",
+              "No ORDER BY at all; two identical page-1 requests return different items.",
+              "Tiebreaker sorted in a different direction than the business key, silently breaking tuple comparison."
+            ],
+            "sources": [
+              "POSTGRESQL-DOCS"
+            ],
+            "evidence": [
+              {
+                "source": "POSTGRESQL-DOCS",
+                "locator": "§7.6 LIMIT and OFFSET — ORDER BY must constrain rows into a unique order; §7.5 Sorting Rows — order guaranteed only when explicitly chosen",
+                "support": "direct",
+                "note": "Directly requires a unique-constraining ORDER BY and warns that different LIMIT/OFFSET values otherwise give inconsistent, unpredictable subsets; Boring applies this to every paged API as a total order with tiebreaker.\n"
+              }
+            ],
+            "edge_cases": [
+              "BORING-EDGE-PAGINATION-001",
+              "BORING-EDGE-PAGINATION-002"
+            ],
+            "related_rules": [
+              "BORING-PAGINATION-002"
+            ],
+            "verification": {
+              "automatable": "partial",
+              "visibility": [
+                "black-box",
+                "source-review"
+              ],
+              "scenarios": [
+                {
+                  "given": "a dataset with many rows sharing one sort-key value",
+                  "when": "all pages are fetched at a fixed page size",
+                  "expect": [
+                    "every row appears exactly once across the full traversal",
+                    "repeating the traversal returns the same row-to-page assignment"
+                  ]
+                }
+              ]
+            },
+            "tags": [
+              "ordering",
+              "total-order",
+              "correctness"
+            ]
+          },
+          {
+            "id": "BORING-PAGINATION-002",
+            "title": "Keep traversal stable when rows are inserted or deleted between pages",
+            "level": "SHOULD",
+            "status": "draft",
+            "statement": "Traversal across pages should not duplicate or skip items when rows are inserted or deleted mid-traversal. The strong default for changing datasets is a position-anchored (keyset/cursor) continuation rather than a row-offset skip; offset paging remains acceptable where the dataset is small, effectively static, or random access matters more than shift-stability, provided the tradeoff is documented.\n",
+            "why": [
+              "Offsets name a position (\"skip 20\"), so any insert or delete ahead of the window shifts every later page.",
+              "Keyset continuations name a place in the sort order (\"after this key\"), so other rows' inserts and deletes do not move the resume point.",
+              "Feeds, timelines, and large tables change during traversal in practice; admin lists of a dozen static rows do not, which is why this is SHOULD, not MUST."
+            ],
+            "applies_when": [
+              "Clients traverse more than one page while the underlying dataset can change."
+            ],
+            "exceptions": [],
+            "does_not_apply_when": [
+              "The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract."
+            ],
+            "failure_modes": [
+              "New rows at the head duplicate the boundary rows onto the next offset page.",
+              "Deleted rows in an early page silently skip the rows that slid forward."
+            ],
+            "sources": [
+              "POSTGRESQL-DOCS",
+              "STRIPE-PAGINATION",
+              "DYNAMODB-PAGINATION"
+            ],
+            "evidence": [
+              {
+                "source": "POSTGRESQL-DOCS",
+                "locator": "§7.6 — different LIMIT/OFFSET subsets give inconsistent results without predictable ordering",
+                "support": "direct",
+                "note": "Directly establishes offset instability; Boring scopes the SHOULD to changing multi-page traversals and names keyset continuation as the strong default.\n"
+              },
+              {
+                "source": "STRIPE-PAGINATION",
+                "locator": "Cursor pagination via starting_after / ending_before object-ID cursors",
+                "support": "derived",
+                "note": "Stripe's cursor design is derived here as the position-anchored pattern: resuming after an object ID rather than skipping N rows.\n"
+              },
+              {
+                "source": "DYNAMODB-PAGINATION",
+                "locator": "LastEvaluatedKey / ExclusiveStartKey keyset resumption",
+                "support": "derived",
+                "note": "DynamoDB's keyset resumption is derived as the same pattern at the storage layer: the continuation is the last evaluated key, not a row count.\n"
+              }
+            ],
+            "edge_cases": [
+              "BORING-EDGE-PAGINATION-003",
+              "BORING-EDGE-PAGINATION-004",
+              "BORING-EDGE-PAGINATION-010"
+            ],
+            "related_rules": [
+              "BORING-PAGINATION-001",
+              "BORING-PAGINATION-008"
+            ],
+            "verification": {
+              "automatable": "partial",
+              "visibility": [
+                "black-box",
+                "source-review"
+              ],
+              "scenarios": [
+                {
+                  "given": "a traversal in progress at page 2 of a changing feed",
+                  "when": "rows are inserted at the head and deleted from earlier pages before the next fetch",
+                  "expect": [
+                    "no row appears twice and no row is silently skipped (within the documented concurrent-change policy)"
+                  ]
+                }
+              ]
+            },
+            "tags": [
+              "traversal",
+              "keyset",
+              "correctness"
+            ]
+          },
+          {
+            "id": "BORING-PAGINATION-003",
+            "title": "Treat cursors as opaque, untrusted input",
+            "level": "MUST",
+            "status": "draft",
+            "statement": "Cursors must be treated as opaque client round-trips and validated on receipt. Malformed, forged, foreign, or expired cursors must be rejected with a clear error or handled per documented policy — never crash the server, leak internals, or return another scope's data.\n",
+            "why": [
+              "Cursors arrive from the network; hand-edited, truncated, replayed, or cross-endpoint cursors are normal traffic, not edge fantasies.",
+              "Decoding a cursor without validation turns pagination into an injection and information-disclosure surface.",
+              "Opaque means the client must not need to understand cursor internals to page correctly."
+            ],
+            "applies_when": [
+              "The API accepts client-supplied cursors or page tokens."
+            ],
+            "exceptions": [],
+            "does_not_apply_when": [
+              "The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract."
+            ],
+            "failure_modes": [
+              "A truncated base64 cursor raises an unhandled exception and returns a stack trace.",
+              "A cursor from another tenant's export is accepted and returns that tenant's rows.",
+              "Clients parse cursors to build their own, coupling to internals that later break."
+            ],
+            "sources": [
+              "RELAY-CURSOR-CONNECTIONS",
+              "GITHUB-PAGINATION"
+            ],
+            "evidence": [
+              {
+                "source": "RELAY-CURSOR-CONNECTIONS",
+                "locator": "§3.1.2 Cursor — result is opaque to the client, passed back as after/before",
+                "support": "direct",
+                "note": "Opaqueness directly implies servers cannot trust cursor content and clients must round-trip rather than construct cursors.\n"
+              },
+              {
+                "source": "GITHUB-PAGINATION",
+                "locator": "Link-header URLs with rel relations; do not guess or construct pagination URLs",
+                "support": "direct",
+                "note": "Clients must follow server-issued pagination relations; hand-built or foreign cursors are outside the contract and must fail safely.\n"
+              }
+            ],
+            "edge_cases": [
+              "BORING-EDGE-PAGINATION-005"
+            ],
+            "related_rules": [
+              "BORING-PAGINATION-004",
+              "BORING-PAGINATION-009"
+            ],
+            "verification": {
+              "automatable": true,
+              "visibility": [
+                "black-box"
+              ],
+              "scenarios": [
+                {
+                  "given": "a list endpoint with cursor pagination",
+                  "when": "truncated, cross-endpoint, and hand-edited cursors are submitted",
+                  "expect": [
+                    "each is rejected with a documented error or handled per policy, with no crash, no stack-trace disclosure, and no cross-scope data"
+                  ]
+                }
+              ]
+            },
+            "tags": [
+              "cursors",
+              "validation",
+              "correctness"
+            ]
+          },
+          {
+            "id": "BORING-PAGINATION-004",
+            "title": "Bind cursors to the query that produced them",
+            "level": "MUST",
+            "status": "draft",
+            "statement": "A cursor must only be honored against the query that produced it — including filters, sort, direction, and authorization scope. Reuse across a different query must be rejected or explicitly re-scoped per documented policy, never silently return the wrong slice.\n",
+            "why": [
+              "A cursor encodes a position inside one ordered, filtered set; against another set the same position bytes mean something else entirely.",
+              "Silent cross-query acceptance returns confidently wrong data — missing rows with no error — which clients cannot detect.",
+              "Scope changes (tenant, permission set) turn a stale cursor into an access-boundary bug when the cursor outlives its authorization context."
+            ],
+            "applies_when": [
+              "Cursors are accepted alongside filters, sorts, or scoped authorization."
+            ],
+            "exceptions": [],
+            "does_not_apply_when": [
+              "The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract."
+            ],
+            "failure_modes": [
+              "A cursor from \"status=open\" paged against \"status=closed\" returns open rows labeled as closed.",
+              "Changing sort direction mid-traversal silently restarts or scrambles the sequence.",
+              "A cursor issued under one tenant's scope is replayed under another."
+            ],
+            "sources": [
+              "DYNAMODB-PAGINATION"
+            ],
+            "evidence": [
+              {
+                "source": "DYNAMODB-PAGINATION",
+                "locator": "ExclusiveStartKey used with the same KeyConditionExpression; Limit scoping",
+                "support": "direct",
+                "note": "The continuation key is only meaningful against the query that produced it; Boring generalizes the same-query requirement to filters, sorts, direction, and scopes.\n"
+              }
+            ],
+            "edge_cases": [
+              "BORING-EDGE-PAGINATION-006"
+            ],
+            "related_rules": [
+              "BORING-PAGINATION-003"
+            ],
+            "verification": {
+              "automatable": true,
+              "visibility": [
+                "black-box"
+              ],
+              "scenarios": [
+                {
+                  "given": "a cursor issued for one filter/sort/scope combination",
+                  "when": "it is replayed against a different combination",
+                  "expect": [
+                    "the request is rejected or re-scoped per documented policy; the wrong slice is never returned silently"
+                  ]
+                }
+              ]
+            },
+            "tags": [
+              "cursors",
+              "filters",
+              "correctness"
+            ]
+          },
+          {
+            "id": "BORING-PAGINATION-005",
+            "title": "Terminate correctly on empty and exact-boundary pages",
+            "level": "MUST",
+            "status": "draft",
+            "statement": "The end of a paginated set must be signaled by the explicit continuation state (absent token, has_more/hasNextPage false) — never inferred from item counts. Empty result sets are valid data, and a page that fills exactly to the boundary must still report whether more data follows.\n",
+            "why": [
+              "Filtered pages can return zero items while more data remains; treating empty as done truncates the traversal.",
+              "A full final page looks identical to a full non-final page by count; only the continuation signal distinguishes them.",
+              "Clients that loop \"while page is full\" request forever or stop one page early depending on which miscount they chose."
+            ],
+            "applies_when": [
+              "Any paginated listing exists."
+            ],
+            "exceptions": [],
+            "failure_modes": [
+              "A filtered page returns zero items with a continuation token and the client stops, losing the remaining data.",
+              "Forty items at page size twenty report has_more true on page 2, sending the client into a fruitless page 3 loop.",
+              "Empty results return an error instead of a valid empty page with correct page info."
+            ],
+            "sources": [
+              "DYNAMODB-PAGINATION",
+              "STRIPE-PAGINATION",
+              "RELAY-CURSOR-CONNECTIONS"
+            ],
+            "evidence": [
+              {
+                "source": "DYNAMODB-PAGINATION",
+                "locator": "LastEvaluatedKey semantics — non-empty key is a page boundary, not proof of more data; filtered pages may return zero items with a key; absent key ends the set",
+                "support": "direct",
+                "note": "Directly establishes count-independent termination: the absent key, not the item count, ends traversal.\n"
+              },
+              {
+                "source": "STRIPE-PAGINATION",
+                "locator": "List response — has_more false comprises the end of the list",
+                "support": "direct",
+                "note": "The end signal is the explicit has_more flag on a full or partial page, not the page filling exactly.\n"
+              },
+              {
+                "source": "RELAY-CURSOR-CONNECTIONS",
+                "locator": "§5.1 PageInfo — startCursor/endCursor null when no results; HasNextPage/HasPreviousPage algorithms over filtered edges",
+                "support": "direct",
+                "note": "Empty connections null their cursors and compute page flags from the filtered edge set, keeping empty pages valid and terminal states explicit.\n"
+              }
+            ],
+            "edge_cases": [
+              "BORING-EDGE-PAGINATION-007"
+            ],
+            "related_rules": [
+              "BORING-PAGINATION-006"
+            ],
+            "verification": {
+              "automatable": true,
+              "visibility": [
+                "black-box"
+              ],
+              "scenarios": [
+                {
+                  "given": "a dataset of exactly two full pages plus a filtered query with an empty first page",
+                  "when": "each is traversed to completion",
+                  "expect": [
+                    "the exact-boundary page reports no further pages and fetching stops",
+                    "the empty page is valid data with correct page info, and traversal continues while a continuation token is present"
+                  ]
+                }
+              ]
+            },
+            "tags": [
+              "boundaries",
+              "termination",
+              "correctness"
+            ]
+          },
+          {
+            "id": "BORING-PAGINATION-006",
+            "title": "Enforce documented page-size defaults and maxima server-side",
+            "level": "MUST",
+            "status": "draft",
+            "statement": "Every paginated endpoint must define a default page size and a maximum page size, enforce them on the server regardless of client input, and handle out-of-range requests (zero, negative, non-numeric, excessive) per documented policy — clamping or rejecting, never allocating unbounded work or returning an undocumented shape.\n",
+            "why": [
+              "Client-supplied sizes are untrusted; an unenforced limit is a resource-exhaustion vector and a response-shape lottery.",
+              "Silent server-side reduction without documentation leaves clients paging against a size they did not ask for.",
+              "The right numbers differ per endpoint and dataset, which is why values are a documented decision but enforcement is not optional."
+            ],
+            "applies_when": [
+              "Clients can influence page size."
+            ],
+            "decision_required": true,
+            "exceptions": [],
+            "does_not_apply_when": [
+              "The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract."
+            ],
+            "failure_modes": [
+              "limit=1000000 materializes a million rows and times out the database.",
+              "limit=0 returns the entire table or an undocumented error shape.",
+              "The server silently halves oversized pages while Link headers still describe the requested size."
+            ],
+            "sources": [
+              "STRIPE-PAGINATION",
+              "GITHUB-PAGINATION"
+            ],
+            "evidence": [
+              {
+                "source": "STRIPE-PAGINATION",
+                "locator": "Parameters — limit 1–100, default 10",
+                "support": "direct",
+                "note": "Bounds and defaults are part of the pagination contract; Boring requires them documented and enforced without fixing Stripe's numbers as universal.\n"
+              },
+              {
+                "source": "GITHUB-PAGINATION",
+                "locator": "per_page maximum 100 with automatic reduction; Link header carries the effective per_page",
+                "support": "direct",
+                "note": "Demonstrates why the effective size must be explicit: silent reduction confuses clients unless documented and reflected in navigation links.\n"
+              }
+            ],
+            "edge_cases": [
+              "BORING-EDGE-PAGINATION-008"
+            ],
+            "related_rules": [
+              "BORING-PAGINATION-005"
+            ],
+            "verification": {
+              "automatable": true,
+              "visibility": [
+                "black-box"
+              ],
+              "scenarios": [
+                {
+                  "given": "the endpoint's documented default and maximum page sizes",
+                  "when": "zero, negative, non-numeric, and excessive sizes are requested",
+                  "expect": [
+                    "each is clamped or rejected per the documented policy and the maximum is never exceeded"
+                  ]
+                }
+              ]
+            },
+            "tags": [
+              "limits",
+              "resource-bounds",
+              "correctness"
+            ]
+          },
+          {
+            "id": "BORING-PAGINATION-007",
+            "title": "Keep backward pagination in the same order",
+            "level": "MUST",
+            "status": "draft",
+            "statement": "Wherever backward traversal (before/last, ending_before) is offered, it must preserve the list's business order — not return pages in reverse — with correct hasPreviousPage/startCursor semantics, so forward-then- backward traversal returns to the same items.\n",
+            "why": [
+              "Reversing row order on the way back breaks every client that concatenates pages in display order.",
+              "The cursor nearest the resume point must sit at the defined edge of the returned page or clients cannot chain pages in either direction.",
+              "Offering backward paging with forward-only correctness is worse than not offering it — clients build on the promise."
+            ],
+            "applies_when": [
+              "The API supports backward pagination (before/last or equivalent)."
+            ],
+            "exceptions": [],
+            "does_not_apply_when": [
+              "The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract."
+            ],
+            "failure_modes": [
+              "Backward pages arrive newest-last while forward pages arrive newest-first, scrambling concatenation.",
+              "hasPreviousPage stays true on the first page, trapping clients in a backward loop."
+            ],
+            "sources": [
+              "RELAY-CURSOR-CONNECTIONS",
+              "STRIPE-PAGINATION"
+            ],
+            "evidence": [
+              {
+                "source": "RELAY-CURSOR-CONNECTIONS",
+                "locator": "§4.3 Edge order — same ordering for first/after and last/before, not reversed; edge nearest the cursor comes last for before, first for after",
+                "support": "direct",
+                "note": "Directly requires order preservation across directions; Boring applies the round-trip expectation to any backward-paging API, GraphQL or REST.\n"
+              },
+              {
+                "source": "STRIPE-PAGINATION",
+                "locator": "starting_after / ending_before — mutually exclusive cursors over one reverse-chronological order",
+                "support": "direct",
+                "note": "Both directions address opposite sides of the same ordered list rather than re-sorting it.\n"
+              }
+            ],
+            "edge_cases": [
+              "BORING-EDGE-PAGINATION-009"
+            ],
+            "related_rules": [
+              "BORING-PAGINATION-001"
+            ],
+            "verification": {
+              "automatable": true,
+              "visibility": [
+                "black-box"
+              ],
+              "scenarios": [
+                {
+                  "given": "a client mid-list after forward traversal",
+                  "when": "it pages backward with before/last and then forward again",
+                  "expect": [
+                    "items appear in the same business order in both directions and the round trip returns the same items"
+                  ]
+                }
+              ]
+            },
+            "tags": [
+              "reverse",
+              "ordering",
+              "correctness"
+            ]
+          },
+          {
+            "id": "BORING-PAGINATION-008",
+            "title": "Decide the totals and random-access policy deliberately",
+            "level": "CONSIDER",
+            "status": "draft",
+            "statement": "Deliberately decide whether the API offers exact totals and random page access (page N of M), and document the choice: exact counts over large or changing datasets are expensive and go stale mid-traversal, while cursor traversal cannot address arbitrary pages.\n",
+            "why": [
+              "Exact totals such as page 42 of 9,183 need an exact count plus stable addressing; changing datasets invalidate both between requests.",
+              "Count queries over large tables are slow and lock-adjacent; approximate or cached counts with disclaimers are often the honest answer.",
+              "The mistake is drifting into totals implicitly — exposing a total because the ORM paginator includes one — rather than choosing."
+            ],
+            "applies_when": [
+              "List responses could include totals or accept page numbers."
+            ],
+            "decision_required": true,
+            "failure_modes": [
+              "A \"total\" computed once at page 1 contradicts page 5 after concurrent writes, and the UI shows impossible navigation.",
+              "Jump-to-page is offered over keyset traversal by reintroducing offset under the hood without documenting its shift-instability."
+            ],
+            "sources": [
+              "DYNAMODB-PAGINATION",
+              "GITHUB-PAGINATION"
+            ],
+            "evidence": [
+              {
+                "source": "DYNAMODB-PAGINATION",
+                "locator": "Keyset pages with no total or page numbers; forward-only resumption via ExclusiveStartKey",
+                "support": "contextual",
+                "note": "Demonstrates a production pagination model without totals or random access; Boring treats totals as a deliberate product decision, not a default.\n"
+              },
+              {
+                "source": "GITHUB-PAGINATION",
+                "locator": "Link-header relations (next/prev/first/last) as the navigation contract",
+                "support": "contextual",
+                "note": "Shows relation-based navigation as an alternative to client-computed page arithmetic; whether page numbers are offered at all is the documented decision.\n"
+              }
+            ],
+            "edge_cases": [
+              "BORING-EDGE-PAGINATION-003",
+              "BORING-EDGE-PAGINATION-004"
+            ],
+            "related_rules": [
+              "BORING-PAGINATION-002"
+            ],
+            "verification": {
+              "automatable": false,
+              "visibility": [
+                "source-review",
+                "manual"
+              ],
+              "scenarios": [
+                {
+                  "given": "the documented totals and random-access policy",
+                  "when": "listing code and responses are reviewed",
+                  "expect": [
+                    "exposed totals match the documented exactness (exact, approximate with disclaimer, or absent) and page-number access matches the documented mechanism"
+                  ]
+                }
+              ]
+            },
+            "tags": [
+              "totals",
+              "policy",
+              "decision-required"
+            ]
+          },
+          {
+            "id": "BORING-PAGINATION-009",
+            "title": "Define cursor lifetime and invalidation",
+            "level": "CONSIDER",
+            "status": "draft",
+            "statement": "Define how long cursors stay valid and what invalidates them — data retention, sort-key updates, schema or encoding changes, encryption-key rotation — and handle expired cursors per documented policy rather than failing mysteriously.\n",
+            "why": [
+              "A cursor is a promise about future reads; retention purges, key updates, and re-encodings break the promise silently when no policy exists.",
+              "Eternal cursors and expiring cursors are both legitimate; the bug is clients discovering the choice through production failures.",
+              "Anchor rows that move or vanish mid-traversal need a defined outcome (miss, repeat, or exclude) instead of an undefined one."
+            ],
+            "applies_when": [
+              "Cursors can outlive the state they were issued against."
+            ],
+            "decision_required": true,
+            "failure_modes": [
+              "A week-old bookmarked cursor decodes against a rotated key and returns a 500 with an encoding stack trace.",
+              "Retention deletes the anchor row and traversal silently restarts from the head with no signal."
+            ],
+            "sources": [
+              "DYNAMODB-PAGINATION",
+              "RELAY-CURSOR-CONNECTIONS"
+            ],
+            "evidence": [
+              {
+                "source": "DYNAMODB-PAGINATION",
+                "locator": "LastEvaluatedKey as a primary-key position; resumption assumes the key space still exists",
+                "support": "contextual",
+                "note": "Key-position cursors are durable while the key space is; retention and schema changes bound that durability, which Boring requires to be documented.\n"
+              },
+              {
+                "source": "RELAY-CURSOR-CONNECTIONS",
+                "locator": "§3.1.2 opaque cursors; §4.4 cursor filtering against current edges",
+                "support": "contextual",
+                "note": "Opaque cursors leave lifetime and missing-anchor behavior to the server; Boring requires that server choice to be explicit rather than accidental.\n"
+              }
+            ],
+            "edge_cases": [
+              "BORING-EDGE-PAGINATION-010",
+              "BORING-EDGE-PAGINATION-005"
+            ],
+            "related_rules": [
+              "BORING-PAGINATION-003"
+            ],
+            "verification": {
+              "automatable": false,
+              "visibility": [
+                "source-review",
+                "manual"
+              ],
+              "scenarios": [
+                {
+                  "given": "the documented cursor lifetime and invalidation events",
+                  "when": "an expired or invalidated cursor is presented",
+                  "expect": [
+                    "behavior matches the documented policy (clear error, restart token, or defined resumption) with no crash or silent restart"
+                  ]
+                }
+              ]
+            },
+            "tags": [
+              "cursors",
+              "policy",
+              "decision-required"
+            ]
+          }
+        ]
+      }
+    },
+    {
       "path": "specs/webhooks/spec.yaml",
       "schema_version": 1,
       "spec": {
@@ -3966,9 +4647,9 @@
           "evidence": [
             {
               "source": "OWASP-FORGOT-PASSWORD",
-              "locator": "Forgot Password Request; User Resets Password; General Security Practices",
+              "locator": "Introduction; General Security Practices — Invalidated after they have been used",
               "support": "direct",
-              "note": "The cited OWASP-FORGOT-PASSWORD material supports this scenario or its expected behavior; the example is an original Boring formulation.\n"
+              "note": "OWASP requires single-use invalidation after use; this case tests the direct replay of a consumed token. Original Boring scenario.\n"
             }
           ],
           "related_rules": [
@@ -4000,9 +4681,9 @@
           "evidence": [
             {
               "source": "OWASP-FORGOT-PASSWORD",
-              "locator": "Forgot Password Request; User Resets Password; General Security Practices",
-              "support": "direct",
-              "note": "The cited OWASP-FORGOT-PASSWORD material supports this scenario or its expected behavior; the example is an original Boring formulation.\n"
+              "locator": "Introduction; General Security Practices — single-use and invalidation",
+              "support": "derived",
+              "note": "OWASP defines no outstanding-token policy; Boring derives the bounded-exposure default from single-use invalidation. The enforceable expectation is the documented policy. Original Boring scenario.\n"
             }
           ],
           "related_rules": [
@@ -4034,9 +4715,9 @@
           "evidence": [
             {
               "source": "OWASP-FORGOT-PASSWORD",
-              "locator": "Forgot Password Request; User Resets Password; General Security Practices",
-              "support": "direct",
-              "note": "The cited OWASP-FORGOT-PASSWORD material supports this scenario or its expected behavior; the example is an original Boring formulation.\n"
+              "locator": "Introduction — Do not make a change to the account until a valid token is presented",
+              "support": "derived",
+              "note": "OWASP requires validation at completion but defines no credential-change invalidation policy; Boring derives the strong default from the single-credential-change principle. Original Boring scenario.\n"
             }
           ],
           "related_rules": [
@@ -4070,9 +4751,9 @@
           "evidence": [
             {
               "source": "OWASP-FORGOT-PASSWORD",
-              "locator": "Forgot Password Request; User Resets Password; General Security Practices",
+              "locator": "Introduction — expire after an appropriate period",
               "support": "direct",
-              "note": "The cited OWASP-FORGOT-PASSWORD material supports this scenario or its expected behavior; the example is an original Boring formulation.\n"
+              "note": "OWASP requires bounded lifetimes; the boundary test (inclusive/exclusive, server clock) is Boring's enforcement of an unambiguous expiry check at completion time. Original Boring scenario.\n"
             }
           ],
           "related_rules": [
@@ -4105,9 +4786,9 @@
           "evidence": [
             {
               "source": "OWASP-FORGOT-PASSWORD",
-              "locator": "Forgot Password Request; User Resets Password; General Security Practices",
+              "locator": "Introduction; General Security Practices — Invalidated after they have been used",
               "support": "direct",
-              "note": "The cited OWASP-FORGOT-PASSWORD material supports this scenario or its expected behavior; the example is an original Boring formulation.\n"
+              "note": "Single-use invalidation directly implies at most one concurrent completion takes effect; atomic invalidation is Boring's enforcement under race. Original Boring scenario.\n"
             }
           ],
           "related_rules": [
@@ -4140,9 +4821,9 @@
           "evidence": [
             {
               "source": "OWASP-FORGOT-PASSWORD",
-              "locator": "Forgot Password Request; User Resets Password; General Security Practices",
+              "locator": "Introduction; Forgot Password Request — consistent message for existent and non-existent accounts",
               "support": "direct",
-              "note": "The cited OWASP-FORGOT-PASSWORD material supports this scenario or its expected behavior; the example is an original Boring formulation.\n"
+              "note": "Enumeration resistance directly covers deleted accounts; non-resurrection is Boring's enforcement that the flow must not undo deletion. Original Boring scenario.\n"
             }
           ],
           "related_rules": [
@@ -4177,9 +4858,15 @@
           "evidence": [
             {
               "source": "OWASP-FORGOT-PASSWORD",
-              "locator": "Forgot Password Request; User Resets Password; General Security Practices",
-              "support": "direct",
-              "note": "The cited OWASP-FORGOT-PASSWORD material supports this scenario or its expected behavior; the example is an original Boring formulation.\n"
+              "locator": "Introduction; Forgot Password Request — consistent message",
+              "support": "derived",
+              "note": "Enumeration resistance is borrowed for passwordless accounts; the no-silent-local-password policy is Boring's derived safeguard against bypassing the external provider. Original Boring scenario.\n"
+            },
+            {
+              "source": "OWASP-AUTHENTICATION",
+              "locator": "Authentication and Error Messages — Authentication Responses (generic message regardless of account state)",
+              "support": "derived",
+              "note": "Generic-response guidance is applied to the no-local-credential case; the IdP-bypass prohibition is Boring's derived policy, hence decision_required.\n"
             }
           ],
           "related_rules": [
@@ -4215,9 +4902,15 @@
           "evidence": [
             {
               "source": "OWASP-FORGOT-PASSWORD",
-              "locator": "Forgot Password Request; User Resets Password; General Security Practices",
-              "support": "direct",
-              "note": "The cited OWASP-FORGOT-PASSWORD material supports this scenario or its expected behavior; the example is an original Boring formulation.\n"
+              "locator": "General Security Practices — Linked to an individual user in the database",
+              "support": "derived",
+              "note": "Per-user linkage is derived as account binding rather than address-string binding when the address changes mid-flow; the onward-communication policy is Boring's decision point. Original Boring scenario.\n"
+            },
+            {
+              "source": "RFC-5321",
+              "locator": "§2.4 (local-part case sensitivity and interoperability warning)",
+              "support": "contextual",
+              "note": "Context for why address strings are unreliable identity keys; the binding requirement itself comes from OWASP, not from SMTP.\n"
             }
           ],
           "related_rules": [
@@ -4251,9 +4944,15 @@
           "evidence": [
             {
               "source": "OWASP-FORGOT-PASSWORD",
-              "locator": "Forgot Password Request; User Resets Password; General Security Practices",
-              "support": "direct",
-              "note": "The cited OWASP-FORGOT-PASSWORD material supports this scenario or its expected behavior; the example is an original Boring formulation.\n"
+              "locator": "Introduction — Do not make a change to the account until a valid token is presented",
+              "support": "derived",
+              "note": "Completion-time validation is derived to include account-state re-checks, so a valid token cannot restore deactivated access. Original Boring scenario.\n"
+            },
+            {
+              "source": "OWASP-AUTHENTICATION",
+              "locator": "Authentication and Error Messages — Authentication Responses (locked or disabled accounts get the generic response)",
+              "support": "contextual",
+              "note": "Context that locked/disabled state must not leak through responses; the no-restore expectation is Boring's authorization safeguard.\n"
             }
           ],
           "related_rules": [
@@ -4287,9 +4986,15 @@
           "evidence": [
             {
               "source": "OWASP-FORGOT-PASSWORD",
-              "locator": "Forgot Password Request; User Resets Password; General Security Practices",
+              "locator": "Forgot Password Request — consistent time; Introduction — uniform response time",
               "support": "direct",
-              "note": "The cited OWASP-FORGOT-PASSWORD material supports this scenario or its expected behavior; the example is an original Boring formulation.\n"
+              "note": "Directly requires uniform timing via async or same-logic paths; throttling counters are Boring's extension of the same indistinguishability to side channels. Original Boring scenario.\n"
+            },
+            {
+              "source": "OWASP-AUTHENTICATION",
+              "locator": "Authentication and Error Messages — business logic can bring a timing discrepancy factor; same-process code example",
+              "support": "direct",
+              "note": "Directly documents processing-time discrepancy as enumeration and shows the same-process mitigation; applied here to the reset-request paths.\n"
             }
           ],
           "related_rules": [
@@ -4323,9 +5028,15 @@
           "evidence": [
             {
               "source": "OWASP-SESSION-MANAGEMENT",
-              "locator": "Session ID Properties; Cookies; Session ID Life Cycle; Session Expiration",
+              "locator": "Session Management Implementation — IDs in URLs disclose via links, logs, history, Referer, search engines; Logging — omit IDs from logs",
+              "support": "derived",
+              "note": "URL-secret disclosure channels documented for session IDs are derived for reset tokens, which are likewise bearer credentials. Original Boring scenario.\n"
+            },
+            {
+              "source": "OWASP-FORGOT-PASSWORD",
+              "locator": "URL Tokens — HTTPS reset URLs; Referrer-Policy noreferrer",
               "support": "direct",
-              "note": "The cited OWASP-SESSION-MANAGEMENT material supports this scenario or its expected behavior; the example is an original Boring formulation.\n"
+              "note": "Directly requires HTTPS and noreferrer handling for reset links; previews and analytics retention are Boring's generalization to all channels holding a live token.\n"
             }
           ],
           "related_rules": [
@@ -4362,9 +5073,21 @@
           "evidence": [
             {
               "source": "RFC-5321",
-              "locator": "§4.5.3.1; §2.4",
+              "locator": "§2.4 (local-part case sensitivity and interoperability warning); §4.5.3.1 (path and local-part limits)",
               "support": "direct",
-              "note": "The cited RFC-5321 material supports this scenario or its expected behavior; the example is an original Boring formulation.\n"
+              "note": "Establishes that local-parts may be case-sensitive with interoperability consequences; applications must define their own normalization policy rather than assuming one. Original Boring scenario.\n"
+            },
+            {
+              "source": "RFC-5322",
+              "locator": "§3.2.3 (dot-atom); §3.4.1 (quoted-string local parts and display names)",
+              "support": "contextual",
+              "note": "Context for dot and quoting syntax that makes naive string equality wrong; the enumeration-safe resolution policy is Boring's requirement.\n"
+            },
+            {
+              "source": "UNICODE-UTS46",
+              "locator": "§2 (compatibility mapping for IDNA2008); §1.3.2 (transitional vs nontransitional Deviation handling)",
+              "support": "contextual",
+              "note": "Context for domain-side mapping differences that can make two spellings resolve together or apart; the consistent-policy expectation is Boring's.\n"
             }
           ],
           "related_rules": [
@@ -6977,6 +7700,391 @@
       ]
     },
     {
+      "path": "edge-cases/pagination/traversal.yaml",
+      "schema_version": 1,
+      "dataset": {
+        "id": "pagination-traversal",
+        "title": "Pagination traversal",
+        "description": "Situations that break paginated traversal: unstable ordering, tied sort values, inserts and deletes between pages, invalid or rebound cursors, boundary pages, page-size abuse, reversed backward pages, and concurrent changes. Companion to the pagination spec.\n",
+        "updated": "2026-09-04"
+      },
+      "cases": [
+        {
+          "id": "BORING-EDGE-PAGINATION-001",
+          "title": "Pages fetched without a stable order",
+          "kind": "sequence",
+          "risk": [
+            "correctness",
+            "data-integrity"
+          ],
+          "scenario": {
+            "given": "a list endpoint with no documented sort order",
+            "when": "a client fetches page 1, then page 2 with the same page size",
+            "expect": [
+              "the two pages do not form a coherent traversal; items may repeat, skip, or change order between identical requests"
+            ]
+          },
+          "sources": [
+            "POSTGRESQL-DOCS"
+          ],
+          "evidence": [
+            {
+              "source": "POSTGRESQL-DOCS",
+              "locator": "§7.6 LIMIT and OFFSET; §7.5 Sorting Rows (ORDER BY)",
+              "support": "direct",
+              "note": "SQL promises no result order without ORDER BY, and different LIMIT/OFFSET values yield inconsistent subsets; this case demonstrates that warning on a paginated API. Original Boring scenario.\n"
+            }
+          ],
+          "related_rules": [
+            "BORING-PAGINATION-001"
+          ],
+          "tags": [
+            "ordering",
+            "traversal"
+          ]
+        },
+        {
+          "id": "BORING-EDGE-PAGINATION-002",
+          "title": "Tied sort values without a unique tiebreaker",
+          "kind": "value",
+          "risk": [
+            "correctness",
+            "data-integrity"
+          ],
+          "scenario": {
+            "given": "one hundred rows sharing the same created_at second, paged by created_at alone with page size ten",
+            "when": "the client walks all ten pages",
+            "expect": [
+              "tied rows appear on unpredictable pages; some duplicate across pages and some never appear"
+            ]
+          },
+          "sources": [
+            "POSTGRESQL-DOCS"
+          ],
+          "evidence": [
+            {
+              "source": "POSTGRESQL-DOCS",
+              "locator": "§7.6 — ORDER BY must constrain rows into a unique order",
+              "support": "direct",
+              "note": "A non-unique ORDER BY leaves subset choice unpredictable; the tiebreaker requirement is the direct remedy. Original Boring scenario.\n"
+            }
+          ],
+          "related_rules": [
+            "BORING-PAGINATION-001"
+          ],
+          "tags": [
+            "ties",
+            "total-order"
+          ]
+        },
+        {
+          "id": "BORING-EDGE-PAGINATION-003",
+          "title": "Insert between pages shifts offset windows",
+          "kind": "sequence",
+          "risk": [
+            "correctness",
+            "data-integrity"
+          ],
+          "scenario": {
+            "given": "a client holds page 1 of an offset-paged feed (offset 0, limit 20)",
+            "when": "five new rows are inserted at the head before the client requests offset 20",
+            "expect": [
+              "the five rows at the old boundary appear on both pages (duplicates) under plain offset traversal"
+            ]
+          },
+          "sources": [
+            "POSTGRESQL-DOCS"
+          ],
+          "evidence": [
+            {
+              "source": "POSTGRESQL-DOCS",
+              "locator": "§7.6 — different LIMIT/OFFSET subsets give inconsistent results without predictable ordering",
+              "support": "derived",
+              "note": "Boring derives the insert-duplicate consequence from the documented offset inconsistency; the remedy is a position-anchored cursor. Original Boring scenario.\n"
+            }
+          ],
+          "related_rules": [
+            "BORING-PAGINATION-002"
+          ],
+          "tags": [
+            "inserts",
+            "offset"
+          ]
+        },
+        {
+          "id": "BORING-EDGE-PAGINATION-004",
+          "title": "Delete between pages skips items",
+          "kind": "sequence",
+          "risk": [
+            "correctness",
+            "data-integrity"
+          ],
+          "scenario": {
+            "given": "a client holds page 1 of an offset-paged list (offset 0, limit 20)",
+            "when": "five rows in page 1 are deleted before the client requests offset 20",
+            "expect": [
+              "the five rows that slid forward into the old window are never shown (skips) under plain offset traversal"
+            ]
+          },
+          "sources": [
+            "POSTGRESQL-DOCS"
+          ],
+          "evidence": [
+            {
+              "source": "POSTGRESQL-DOCS",
+              "locator": "§7.6 — different LIMIT/OFFSET subsets give inconsistent results without predictable ordering",
+              "support": "derived",
+              "note": "Boring derives the delete-skip consequence from the documented offset inconsistency; position-anchored cursors bound the damage. Original Boring scenario.\n"
+            }
+          ],
+          "related_rules": [
+            "BORING-PAGINATION-002"
+          ],
+          "tags": [
+            "deletes",
+            "offset"
+          ]
+        },
+        {
+          "id": "BORING-EDGE-PAGINATION-005",
+          "title": "Malformed, forged, or expired cursor",
+          "kind": "value",
+          "risk": [
+            "correctness"
+          ],
+          "scenario": {
+            "given": "a list endpoint issuing opaque cursors",
+            "when": "a client sends a truncated cursor, a cursor from another endpoint, or a hand-edited cursor string",
+            "expect": [
+              "the request is rejected with a clear error or restarted per documented policy; it never crashes, leaks internals, or returns another tenant's data"
+            ]
+          },
+          "sources": [
+            "RELAY-CURSOR-CONNECTIONS",
+            "GITHUB-PAGINATION"
+          ],
+          "evidence": [
+            {
+              "source": "RELAY-CURSOR-CONNECTIONS",
+              "locator": "§3.1.2 Cursor (opaque to the client, passed back as after/before)",
+              "support": "direct",
+              "note": "Cursors are defined as opaque client round-trips; servers must therefore validate rather than trust their content. Original Boring scenario.\n"
+            },
+            {
+              "source": "GITHUB-PAGINATION",
+              "locator": "Link-header URLs; do not guess or construct pagination URLs",
+              "support": "direct",
+              "note": "Clients must follow server-issued pagination URLs and relations; hand-built cursors are outside the contract and must be handled safely.\n"
+            }
+          ],
+          "related_rules": [
+            "BORING-PAGINATION-003"
+          ],
+          "tags": [
+            "cursors",
+            "validation"
+          ]
+        },
+        {
+          "id": "BORING-EDGE-PAGINATION-006",
+          "title": "Cursor reused with different filters, sort, or scope",
+          "kind": "state",
+          "risk": [
+            "correctness",
+            "data-integrity"
+          ],
+          "scenario": {
+            "given": "a cursor issued for \"status=open, sort=created_at desc\"",
+            "when": "the client replays it against \"status=closed\" or \"sort=priority asc\"",
+            "expect": [
+              "the server rejects the mismatched cursor or re-scopes it per documented policy; it never silently returns the wrong slice"
+            ]
+          },
+          "sources": [
+            "DYNAMODB-PAGINATION"
+          ],
+          "evidence": [
+            {
+              "source": "DYNAMODB-PAGINATION",
+              "locator": "ExclusiveStartKey used with the same KeyConditionExpression",
+              "support": "direct",
+              "note": "The continuation key is only meaningful against the query that produced it; cross-query reuse is Boring's generalization to filters, sorts, and scopes. Original Boring scenario.\n"
+            }
+          ],
+          "related_rules": [
+            "BORING-PAGINATION-004"
+          ],
+          "tags": [
+            "cursors",
+            "filters"
+          ]
+        },
+        {
+          "id": "BORING-EDGE-PAGINATION-007",
+          "title": "Empty page and exact-boundary full page",
+          "kind": "boundary",
+          "risk": [
+            "correctness"
+          ],
+          "scenario": {
+            "given": "a dataset of exactly forty items with page size twenty, and a filtered query matching zero items with a continuation token present",
+            "when": "the client fetches page 2 (full, exactly at the end) and the empty filtered page",
+            "expect": [
+              "the exact-boundary page reports no further pages and the empty result is valid data, not an error; the client terminates without an extra fruitless request loop"
+            ]
+          },
+          "sources": [
+            "DYNAMODB-PAGINATION",
+            "STRIPE-PAGINATION",
+            "RELAY-CURSOR-CONNECTIONS"
+          ],
+          "evidence": [
+            {
+              "source": "DYNAMODB-PAGINATION",
+              "locator": "LastEvaluatedKey semantics — non-empty key is a page boundary, not proof of more data; filtered pages may return zero items with a key; absent key ends the set",
+              "support": "direct",
+              "note": "Directly establishes that item count alone cannot signal the end; the end is the absent continuation key. Original Boring scenario.\n"
+            },
+            {
+              "source": "STRIPE-PAGINATION",
+              "locator": "List response — has_more false comprises the end of the list",
+              "support": "direct",
+              "note": "The end-of-list signal is the explicit has_more flag, not the page filling exactly.\n"
+            },
+            {
+              "source": "RELAY-CURSOR-CONNECTIONS",
+              "locator": "§5.1 PageInfo — startCursor/endCursor null when no results; HasNextPage/HasPreviousPage algorithms",
+              "support": "direct",
+              "note": "Empty connections null their cursors and compute page flags from filtered edges, not from raw counts.\n"
+            }
+          ],
+          "related_rules": [
+            "BORING-PAGINATION-005"
+          ],
+          "tags": [
+            "boundaries",
+            "termination"
+          ]
+        },
+        {
+          "id": "BORING-EDGE-PAGINATION-008",
+          "title": "Page-size zero, negative, or excessive",
+          "kind": "boundary",
+          "risk": [
+            "correctness",
+            "availability"
+          ],
+          "scenario": {
+            "given": "a list endpoint with documented default and maximum page sizes",
+            "when": "a client requests limit=0, limit=-5, limit=1000000, or a non-numeric limit",
+            "expect": [
+              "the server clamps or rejects per documented policy, enforces the maximum, and never allocates unbounded work or returns an undocumented page shape"
+            ]
+          },
+          "sources": [
+            "STRIPE-PAGINATION",
+            "GITHUB-PAGINATION"
+          ],
+          "evidence": [
+            {
+              "source": "STRIPE-PAGINATION",
+              "locator": "Parameters — limit 1–100, default 10",
+              "support": "direct",
+              "note": "Bounds and defaults are part of the pagination contract; Boring requires them documented and enforced server-side. Original Boring scenario.\n"
+            },
+            {
+              "source": "GITHUB-PAGINATION",
+              "locator": "per_page maximum 100 with automatic reduction; Link header carries the effective per_page",
+              "support": "direct",
+              "note": "Shows why silent reduction without documentation confuses clients; Boring requires the effective behavior to be explicit.\n"
+            }
+          ],
+          "related_rules": [
+            "BORING-PAGINATION-006"
+          ],
+          "tags": [
+            "limits",
+            "resource-bounds"
+          ]
+        },
+        {
+          "id": "BORING-EDGE-PAGINATION-009",
+          "title": "Backward pagination reverses or mislabels order",
+          "kind": "sequence",
+          "risk": [
+            "correctness"
+          ],
+          "scenario": {
+            "given": "a client pages forward to the middle of a list, then pages backward with before/last",
+            "when": "the backward pages are compared with the forward pages",
+            "expect": [
+              "items appear in the same business order (not reversed) with correct hasPreviousPage/startCursor semantics; forward-then-backward returns to the same items"
+            ]
+          },
+          "sources": [
+            "RELAY-CURSOR-CONNECTIONS",
+            "STRIPE-PAGINATION"
+          ],
+          "evidence": [
+            {
+              "source": "RELAY-CURSOR-CONNECTIONS",
+              "locator": "§4.3 Edge order — same ordering for first/after and last/before, not reversed",
+              "support": "direct",
+              "note": "Backward pagination keeps edge order; the edge nearest the cursor comes last. Original Boring scenario.\n"
+            },
+            {
+              "source": "STRIPE-PAGINATION",
+              "locator": "starting_after / ending_before — mutually exclusive cursors in reverse chronological order",
+              "support": "direct",
+              "note": "Reverse traversal addresses the opposite side of the same ordered list rather than re-sorting it.\n"
+            }
+          ],
+          "related_rules": [
+            "BORING-PAGINATION-007"
+          ],
+          "tags": [
+            "reverse",
+            "ordering"
+          ]
+        },
+        {
+          "id": "BORING-EDGE-PAGINATION-010",
+          "title": "Anchor row updated or deleted while traversing",
+          "kind": "concurrency",
+          "risk": [
+            "correctness",
+            "data-integrity"
+          ],
+          "scenario": {
+            "given": "a client holds a cursor anchored at row R",
+            "when": "R's sort key is updated (moving its position) or R is deleted before the next page is fetched",
+            "expect": [
+              "traversal continues from a defined position without crashing or silently restarting; the documented policy states whether the moved row may be missed, repeated, or excluded"
+            ]
+          },
+          "sources": [
+            "DYNAMODB-PAGINATION"
+          ],
+          "evidence": [
+            {
+              "source": "DYNAMODB-PAGINATION",
+              "locator": "LastEvaluatedKey as the position where Query stopped; next Query resumes from ExclusiveStartKey",
+              "support": "derived",
+              "note": "Keyset position is derived from the anchor's sort values, so moving or removing the anchor changes what \"next\" means; Boring requires the policy to be explicit rather than promising impossibility. Original Boring scenario.\n"
+            }
+          ],
+          "related_rules": [
+            "BORING-PAGINATION-002",
+            "BORING-PAGINATION-009"
+          ],
+          "tags": [
+            "concurrency",
+            "anchors"
+          ]
+        }
+      ]
+    },
+    {
       "path": "edge-cases/strings/unicode.yaml",
       "schema_version": 1,
       "dataset": {
@@ -8610,6 +9718,21 @@
       "notes": "Canonical URL parsing model, including scheme-relative and embedded-credential forms.\n"
     },
     {
+      "id": "RELAY-CURSOR-CONNECTIONS",
+      "title": "GraphQL Cursor Connections Specification",
+      "organization": "GraphQL (Relay)",
+      "type": "standard",
+      "tier": 1,
+      "url": "https://relay.dev/graphql/connections.htm",
+      "topics": [
+        "graphql",
+        "pagination",
+        "api-design"
+      ],
+      "accessed": "2026-09-04",
+      "notes": "Opaque per-edge cursors (§3.1.2); forward arguments first/after (§4.1) and backward arguments last/before (§4.2); edge order must be consistent and not reversed for backward pagination (§4.3); cursor-filtering and first/last slicing algorithm (§4.4); PageInfo hasNextPage/hasPreviousPage/startCursor/ endCursor semantics (§5.1).\n"
+    },
+    {
       "id": "OWASP-ASVS",
       "title": "OWASP Application Security Verification Standard (ASVS) 5.0.0",
       "organization": "OWASP",
@@ -8858,6 +9981,63 @@
       ],
       "accessed": "2026-09-04",
       "notes": "nosniff semantics preventing MIME-type sniffing of served content.\n"
+    },
+    {
+      "id": "POSTGRESQL-DOCS",
+      "title": "PostgreSQL documentation — LIMIT/OFFSET and ORDER BY",
+      "organization": "PostgreSQL",
+      "type": "official-vendor-documentation",
+      "tier": 3,
+      "url": "https://www.postgresql.org/docs/current/queries-limit.html",
+      "topics": [
+        "sql",
+        "ordering",
+        "pagination"
+      ],
+      "accessed": "2026-09-04",
+      "notes": "LIMIT/OFFSET (§7.6) requires an ORDER BY constraining rows into a unique order, otherwise subsets are unpredictable and different LIMIT/OFFSET values give inconsistent results; large OFFSET still computes skipped rows and may be inefficient. ORDER BY (§7.5) guarantees order only when explicitly chosen.\n"
+    },
+    {
+      "id": "STRIPE-PAGINATION",
+      "title": "Stripe API pagination documentation",
+      "organization": "Stripe",
+      "type": "official-vendor-documentation",
+      "tier": 3,
+      "url": "https://docs.stripe.com/api/pagination",
+      "topics": [
+        "pagination",
+        "api-design"
+      ],
+      "accessed": "2026-09-04",
+      "notes": "Cursor pagination via limit (1–100, default 10) with mutually exclusive starting_after/ending_before object-ID cursors in reverse chronological order; list responses carry data plus has_more and url.\n"
+    },
+    {
+      "id": "GITHUB-PAGINATION",
+      "title": "GitHub REST API — Using pagination",
+      "organization": "GitHub",
+      "type": "official-vendor-documentation",
+      "tier": 3,
+      "url": "https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api",
+      "topics": [
+        "pagination",
+        "api-design"
+      ],
+      "accessed": "2026-09-04",
+      "notes": "Page (page/per_page) and cursor (before/after) query parameters with server-issued Link-header URLs (rel next/prev/first/last); per_page maximum 100 with silent reduction above the max; clients must follow Link relations rather than constructing URLs.\n"
+    },
+    {
+      "id": "DYNAMODB-PAGINATION",
+      "title": "DynamoDB — Paginating table query results",
+      "organization": "AWS",
+      "type": "official-vendor-documentation",
+      "tier": 3,
+      "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.Pagination.html",
+      "topics": [
+        "pagination",
+        "databases"
+      ],
+      "accessed": "2026-09-04",
+      "notes": "Keyset pagination via LastEvaluatedKey/ExclusiveStartKey with the same KeyConditionExpression and Limit; pages are 1 MB or less; a non-empty LastEvaluatedKey marks a page boundary, not proof of more data, and filtered pages can return zero items with a continuation key; absence of the key ends the set.\n"
     },
     {
       "id": "BLNS",

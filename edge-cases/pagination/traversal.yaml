@@ -1,0 +1,226 @@
+schema_version: 1
+dataset:
+  id: pagination-traversal
+  title: Pagination traversal
+  description: >
+    Situations that break paginated traversal: unstable ordering, tied sort
+    values, inserts and deletes between pages, invalid or rebound cursors,
+    boundary pages, page-size abuse, reversed backward pages, and concurrent
+    changes. Companion to the pagination spec.
+  updated: "2026-09-04"
+
+cases:
+  - id: BORING-EDGE-PAGINATION-001
+    title: Pages fetched without a stable order
+    kind: sequence
+    risk: [correctness, data-integrity]
+    scenario:
+      given: a list endpoint with no documented sort order
+      when: a client fetches page 1, then page 2 with the same page size
+      expect:
+        - the two pages do not form a coherent traversal; items may repeat, skip, or change order between identical requests
+    sources: [POSTGRESQL-DOCS]
+    evidence:
+      - source: POSTGRESQL-DOCS
+        locator: "§7.6 LIMIT and OFFSET; §7.5 Sorting Rows (ORDER BY)"
+        support: direct
+        note: >
+          SQL promises no result order without ORDER BY, and different LIMIT/OFFSET values yield inconsistent subsets; this case demonstrates that warning on a paginated API. Original Boring scenario.
+    related_rules: [BORING-PAGINATION-001]
+    tags: [ordering, traversal]
+
+  - id: BORING-EDGE-PAGINATION-002
+    title: Tied sort values without a unique tiebreaker
+    kind: value
+    risk: [correctness, data-integrity]
+    scenario:
+      given: one hundred rows sharing the same created_at second, paged by created_at alone with page size ten
+      when: the client walks all ten pages
+      expect:
+        - tied rows appear on unpredictable pages; some duplicate across pages and some never appear
+    sources: [POSTGRESQL-DOCS]
+    evidence:
+      - source: POSTGRESQL-DOCS
+        locator: "§7.6 — ORDER BY must constrain rows into a unique order"
+        support: direct
+        note: >
+          A non-unique ORDER BY leaves subset choice unpredictable; the tiebreaker requirement is the direct remedy. Original Boring scenario.
+    related_rules: [BORING-PAGINATION-001]
+    tags: [ties, total-order]
+
+  - id: BORING-EDGE-PAGINATION-003
+    title: Insert between pages shifts offset windows
+    kind: sequence
+    risk: [correctness, data-integrity]
+    scenario:
+      given: a client holds page 1 of an offset-paged feed (offset 0, limit 20)
+      when: five new rows are inserted at the head before the client requests offset 20
+      expect:
+        - the five rows at the old boundary appear on both pages (duplicates) under plain offset traversal
+    sources: [POSTGRESQL-DOCS]
+    evidence:
+      - source: POSTGRESQL-DOCS
+        locator: "§7.6 — different LIMIT/OFFSET subsets give inconsistent results without predictable ordering"
+        support: derived
+        note: >
+          Boring derives the insert-duplicate consequence from the documented offset inconsistency; the remedy is a position-anchored cursor. Original Boring scenario.
+    related_rules: [BORING-PAGINATION-002]
+    tags: [inserts, offset]
+
+  - id: BORING-EDGE-PAGINATION-004
+    title: Delete between pages skips items
+    kind: sequence
+    risk: [correctness, data-integrity]
+    scenario:
+      given: a client holds page 1 of an offset-paged list (offset 0, limit 20)
+      when: five rows in page 1 are deleted before the client requests offset 20
+      expect:
+        - the five rows that slid forward into the old window are never shown (skips) under plain offset traversal
+    sources: [POSTGRESQL-DOCS]
+    evidence:
+      - source: POSTGRESQL-DOCS
+        locator: "§7.6 — different LIMIT/OFFSET subsets give inconsistent results without predictable ordering"
+        support: derived
+        note: >
+          Boring derives the delete-skip consequence from the documented offset inconsistency; position-anchored cursors bound the damage. Original Boring scenario.
+    related_rules: [BORING-PAGINATION-002]
+    tags: [deletes, offset]
+
+  - id: BORING-EDGE-PAGINATION-005
+    title: Malformed, forged, or expired cursor
+    kind: value
+    risk: [correctness]
+    scenario:
+      given: a list endpoint issuing opaque cursors
+      when: a client sends a truncated cursor, a cursor from another endpoint, or a hand-edited cursor string
+      expect:
+        - the request is rejected with a clear error or restarted per documented policy; it never crashes, leaks internals, or returns another tenant's data
+    sources: [RELAY-CURSOR-CONNECTIONS, GITHUB-PAGINATION]
+    evidence:
+      - source: RELAY-CURSOR-CONNECTIONS
+        locator: "§3.1.2 Cursor (opaque to the client, passed back as after/before)"
+        support: direct
+        note: >
+          Cursors are defined as opaque client round-trips; servers must therefore validate rather than trust their content. Original Boring scenario.
+      - source: GITHUB-PAGINATION
+        locator: "Link-header URLs; do not guess or construct pagination URLs"
+        support: direct
+        note: >
+          Clients must follow server-issued pagination URLs and relations; hand-built cursors are outside the contract and must be handled safely.
+    related_rules: [BORING-PAGINATION-003]
+    tags: [cursors, validation]
+
+  - id: BORING-EDGE-PAGINATION-006
+    title: Cursor reused with different filters, sort, or scope
+    kind: state
+    risk: [correctness, data-integrity]
+    scenario:
+      given: a cursor issued for "status=open, sort=created_at desc"
+      when: the client replays it against "status=closed" or "sort=priority asc"
+      expect:
+        - the server rejects the mismatched cursor or re-scopes it per documented policy; it never silently returns the wrong slice
+    sources: [DYNAMODB-PAGINATION]
+    evidence:
+      - source: DYNAMODB-PAGINATION
+        locator: "ExclusiveStartKey used with the same KeyConditionExpression"
+        support: direct
+        note: >
+          The continuation key is only meaningful against the query that produced it; cross-query reuse is Boring's generalization to filters, sorts, and scopes. Original Boring scenario.
+    related_rules: [BORING-PAGINATION-004]
+    tags: [cursors, filters]
+
+  - id: BORING-EDGE-PAGINATION-007
+    title: Empty page and exact-boundary full page
+    kind: boundary
+    risk: [correctness]
+    scenario:
+      given: a dataset of exactly forty items with page size twenty, and a filtered query matching zero items with a continuation token present
+      when: the client fetches page 2 (full, exactly at the end) and the empty filtered page
+      expect:
+        - the exact-boundary page reports no further pages and the empty result is valid data, not an error; the client terminates without an extra fruitless request loop
+    sources: [DYNAMODB-PAGINATION, STRIPE-PAGINATION, RELAY-CURSOR-CONNECTIONS]
+    evidence:
+      - source: DYNAMODB-PAGINATION
+        locator: "LastEvaluatedKey semantics — non-empty key is a page boundary, not proof of more data; filtered pages may return zero items with a key; absent key ends the set"
+        support: direct
+        note: >
+          Directly establishes that item count alone cannot signal the end; the end is the absent continuation key. Original Boring scenario.
+      - source: STRIPE-PAGINATION
+        locator: "List response — has_more false comprises the end of the list"
+        support: direct
+        note: >
+          The end-of-list signal is the explicit has_more flag, not the page filling exactly.
+      - source: RELAY-CURSOR-CONNECTIONS
+        locator: "§5.1 PageInfo — startCursor/endCursor null when no results; HasNextPage/HasPreviousPage algorithms"
+        support: direct
+        note: >
+          Empty connections null their cursors and compute page flags from filtered edges, not from raw counts.
+    related_rules: [BORING-PAGINATION-005]
+    tags: [boundaries, termination]
+
+  - id: BORING-EDGE-PAGINATION-008
+    title: Page-size zero, negative, or excessive
+    kind: boundary
+    risk: [correctness, availability]
+    scenario:
+      given: a list endpoint with documented default and maximum page sizes
+      when: a client requests limit=0, limit=-5, limit=1000000, or a non-numeric limit
+      expect:
+        - the server clamps or rejects per documented policy, enforces the maximum, and never allocates unbounded work or returns an undocumented page shape
+    sources: [STRIPE-PAGINATION, GITHUB-PAGINATION]
+    evidence:
+      - source: STRIPE-PAGINATION
+        locator: "Parameters — limit 1–100, default 10"
+        support: direct
+        note: >
+          Bounds and defaults are part of the pagination contract; Boring requires them documented and enforced server-side. Original Boring scenario.
+      - source: GITHUB-PAGINATION
+        locator: "per_page maximum 100 with automatic reduction; Link header carries the effective per_page"
+        support: direct
+        note: >
+          Shows why silent reduction without documentation confuses clients; Boring requires the effective behavior to be explicit.
+    related_rules: [BORING-PAGINATION-006]
+    tags: [limits, resource-bounds]
+
+  - id: BORING-EDGE-PAGINATION-009
+    title: Backward pagination reverses or mislabels order
+    kind: sequence
+    risk: [correctness]
+    scenario:
+      given: a client pages forward to the middle of a list, then pages backward with before/last
+      when: the backward pages are compared with the forward pages
+      expect:
+        - items appear in the same business order (not reversed) with correct hasPreviousPage/startCursor semantics; forward-then-backward returns to the same items
+    sources: [RELAY-CURSOR-CONNECTIONS, STRIPE-PAGINATION]
+    evidence:
+      - source: RELAY-CURSOR-CONNECTIONS
+        locator: "§4.3 Edge order — same ordering for first/after and last/before, not reversed"
+        support: direct
+        note: >
+          Backward pagination keeps edge order; the edge nearest the cursor comes last. Original Boring scenario.
+      - source: STRIPE-PAGINATION
+        locator: "starting_after / ending_before — mutually exclusive cursors in reverse chronological order"
+        support: direct
+        note: >
+          Reverse traversal addresses the opposite side of the same ordered list rather than re-sorting it.
+    related_rules: [BORING-PAGINATION-007]
+    tags: [reverse, ordering]
+
+  - id: BORING-EDGE-PAGINATION-010
+    title: Anchor row updated or deleted while traversing
+    kind: concurrency
+    risk: [correctness, data-integrity]
+    scenario:
+      given: a client holds a cursor anchored at row R
+      when: R's sort key is updated (moving its position) or R is deleted before the next page is fetched
+      expect:
+        - traversal continues from a defined position without crashing or silently restarting; the documented policy states whether the moved row may be missed, repeated, or excluded
+    sources: [DYNAMODB-PAGINATION]
+    evidence:
+      - source: DYNAMODB-PAGINATION
+        locator: "LastEvaluatedKey as the position where Query stopped; next Query resumes from ExclusiveStartKey"
+        support: derived
+        note: >
+          Keyset position is derived from the anchor's sort values, so moving or removing the anchor changes what "next" means; Boring requires the policy to be explicit rather than promising impossibility. Original Boring scenario.
+    related_rules: [BORING-PAGINATION-002, BORING-PAGINATION-009]
+    tags: [concurrency, anchors]

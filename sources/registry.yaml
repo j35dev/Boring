@@ -241,6 +241,21 @@
     Canonical URL parsing model, including scheme-relative and
     embedded-credential forms.
 
+- id: RELAY-CURSOR-CONNECTIONS
+  title: GraphQL Cursor Connections Specification
+  organization: GraphQL (Relay)
+  type: standard
+  tier: 1
+  url: https://relay.dev/graphql/connections.htm
+  topics: [graphql, pagination, api-design]
+  accessed: "2026-09-04"
+  notes: >
+    Opaque per-edge cursors (§3.1.2); forward arguments first/after (§4.1) and
+    backward arguments last/before (§4.2); edge order must be consistent and not
+    reversed for backward pagination (§4.3); cursor-filtering and first/last
+    slicing algorithm (§4.4); PageInfo hasNextPage/hasPreviousPage/startCursor/
+    endCursor semantics (§5.1).
+
 # --- Tier 2: authoritative application guidance --------------------------------
 
 - id: OWASP-ASVS
@@ -467,6 +482,62 @@
   accessed: "2026-09-04"
   notes: >
     nosniff semantics preventing MIME-type sniffing of served content.
+
+- id: POSTGRESQL-DOCS
+  title: PostgreSQL documentation — LIMIT/OFFSET and ORDER BY
+  organization: PostgreSQL
+  type: official-vendor-documentation
+  tier: 3
+  url: https://www.postgresql.org/docs/current/queries-limit.html
+  topics: [sql, ordering, pagination]
+  accessed: "2026-09-04"
+  notes: >
+    LIMIT/OFFSET (§7.6) requires an ORDER BY constraining rows into a unique
+    order, otherwise subsets are unpredictable and different LIMIT/OFFSET values
+    give inconsistent results; large OFFSET still computes skipped rows and may
+    be inefficient. ORDER BY (§7.5) guarantees order only when explicitly chosen.
+
+- id: STRIPE-PAGINATION
+  title: Stripe API pagination documentation
+  organization: Stripe
+  type: official-vendor-documentation
+  tier: 3
+  url: https://docs.stripe.com/api/pagination
+  topics: [pagination, api-design]
+  accessed: "2026-09-04"
+  notes: >
+    Cursor pagination via limit (1–100, default 10) with mutually exclusive
+    starting_after/ending_before object-ID cursors in reverse chronological
+    order; list responses carry data plus has_more and url.
+
+- id: GITHUB-PAGINATION
+  title: GitHub REST API — Using pagination
+  organization: GitHub
+  type: official-vendor-documentation
+  tier: 3
+  url: https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api
+  topics: [pagination, api-design]
+  accessed: "2026-09-04"
+  notes: >
+    Page (page/per_page) and cursor (before/after) query parameters with
+    server-issued Link-header URLs (rel next/prev/first/last); per_page maximum
+    100 with silent reduction above the max; clients must follow Link relations
+    rather than constructing URLs.
+
+- id: DYNAMODB-PAGINATION
+  title: DynamoDB — Paginating table query results
+  organization: AWS
+  type: official-vendor-documentation
+  tier: 3
+  url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.Pagination.html
+  topics: [pagination, databases]
+  accessed: "2026-09-04"
+  notes: >
+    Keyset pagination via LastEvaluatedKey/ExclusiveStartKey with the same
+    KeyConditionExpression and Limit; pages are 1 MB or less; a non-empty
+    LastEvaluatedKey marks a page boundary, not proof of more data, and filtered
+    pages can return zero items with a continuation key; absence of the key ends
+    the set.
 
 # --- Tier 4: established corpora / test suites ----------------------------------
 

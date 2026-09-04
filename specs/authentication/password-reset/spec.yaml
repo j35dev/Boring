@@ -40,10 +40,20 @@ spec:
       sources: [OWASP-FORGOT-PASSWORD, OWASP-AUTHENTICATION, OWASP-ASVS]
       evidence:
         - source: OWASP-FORGOT-PASSWORD
-          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          locator: "Introduction; Forgot Password Request"
           support: direct
           note: >
-            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
+            Requires a consistent message for existent and non-existent accounts and uniform response time, without behavior differences that allow account discovery; Boring scopes this to unauthenticated reset-request endpoints.
+        - source: OWASP-AUTHENTICATION
+          locator: "Authentication and Error Messages — Authentication Responses; Password recovery examples; Error Codes and URLs"
+          support: direct
+          note: >
+            Requires a generic recovery response regardless of account existence or lock state, with the correct example "If that email address is in our database..."; HTTP status codes must not differ even when the displayed message is generic.
+        - source: OWASP-ASVS
+          locator: "V6.3.8"
+          support: direct
+          note: >
+            Registration and forgot-password flows must not allow deducing valid users from error messages, HTTP response codes, or response-time differences.
       edge_cases: [BORING-EDGE-AUTH-RESET-006, BORING-EDGE-AUTH-RESET-007, BORING-EDGE-AUTH-RESET-010]
       related_rules: [BORING-AUTH-RESET-007]
       verification:
@@ -84,10 +94,10 @@ spec:
       sources: [OWASP-FORGOT-PASSWORD]
       evidence:
         - source: OWASP-FORGOT-PASSWORD
-          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          locator: "Introduction; General Security Practices"
           support: direct
           note: >
-            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
+            Requires tokens to be randomly generated with a cryptographically safe algorithm and long enough to resist brute force; Boring requires a CSPRNG and threat-model-justified strength without prescribing one universal entropy number.
       edge_cases: []
       related_rules: [BORING-AUTH-RESET-003, BORING-AUTH-RESET-011]
       verification:
@@ -121,10 +131,10 @@ spec:
       sources: [OWASP-FORGOT-PASSWORD]
       evidence:
         - source: OWASP-FORGOT-PASSWORD
-          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          locator: "Introduction"
           support: direct
           note: >
-            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
+            Introduction requires tokens to "expire after an appropriate period"; Boring requires a bounded, documented lifetime rejected at completion time, with the bound chosen for the recovery channel and threat model.
       edge_cases: [BORING-EDGE-AUTH-RESET-004]
       related_rules: [BORING-AUTH-RESET-002]
       verification:
@@ -158,10 +168,10 @@ spec:
       sources: [OWASP-FORGOT-PASSWORD]
       evidence:
         - source: OWASP-FORGOT-PASSWORD
-          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          locator: "Introduction; General Security Practices — Invalidated after they have been used"
           support: direct
           note: >
-            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
+            Requires tokens to be single-use and invalidated after use; Boring enforces this under concurrency, so at most one of two simultaneous completions takes effect.
       edge_cases: [BORING-EDGE-AUTH-RESET-001, BORING-EDGE-AUTH-RESET-005]
       related_rules: [BORING-AUTH-RESET-006]
       verification:
@@ -200,10 +210,10 @@ spec:
       sources: [OWASP-FORGOT-PASSWORD]
       evidence:
         - source: OWASP-FORGOT-PASSWORD
-          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          locator: "Introduction — Do not make a change to the account until a valid token is presented"
           support: direct
           note: >
-            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
+            Prohibits any account change, including lockout, before a valid token is presented; Boring applies this at the mutating completion step, re-checking existence, expiry, use state, and account binding.
       edge_cases: [BORING-EDGE-AUTH-RESET-003, BORING-EDGE-AUTH-RESET-009]
       related_rules: [BORING-AUTH-RESET-003, BORING-AUTH-RESET-004]
       verification:
@@ -238,10 +248,10 @@ spec:
       sources: [OWASP-FORGOT-PASSWORD]
       evidence:
         - source: OWASP-FORGOT-PASSWORD
-          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          locator: "General Security Practices — Linked to an individual user in the database"
           support: direct
           note: >
-            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
+            Requires each token to resolve to the individual user it was issued for; Boring prohibits client-supplied identifiers from redirecting the credential change to another account.
       edge_cases: [BORING-EDGE-AUTH-RESET-008, BORING-EDGE-AUTH-RESET-012]
       related_rules: [BORING-AUTH-RESET-004]
       verification:
@@ -278,10 +288,15 @@ spec:
       sources: [OWASP-FORGOT-PASSWORD, NIST-800-63B]
       evidence:
         - source: OWASP-FORGOT-PASSWORD
-          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          locator: "Forgot Password Request — per-account rate limiting / CAPTCHA; URL Tokens — rate limiting token brute force; Account Lockout"
           support: direct
           note: >
-            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
+            Requires abuse controls such as per-account rate limiting or CAPTCHA against inbox flooding and token guessing, while warning that accounts must not be locked out by a forgotten-password attack.
+        - source: NIST-800-63B
+          locator: "Rate limiting for authentication failures (throttling guidance)"
+          support: derived
+          note: >
+            NIST requires rate limiting for authentication events generally; Boring derives the reset-specific application — throttle request and completion without distinguishing known from unknown accounts and without causing lockout — since neither source prescribes one universal reset algorithm.
       edge_cases: [BORING-EDGE-AUTH-RESET-010]
       related_rules: [BORING-AUTH-RESET-001]
       verification:
@@ -315,13 +330,18 @@ spec:
       failure_modes:
         - Reset accepts a one-character password that registration would reject.
         - Breached-password checks skipped because "the user proved identity via email".
-      sources: [OWASP-FORGOT-PASSWORD, NIST-800-63B, OWASP-AUTHENTICATION]
+      sources: [OWASP-FORGOT-PASSWORD, NIST-800-63B]
       evidence:
         - source: OWASP-FORGOT-PASSWORD
-          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          locator: "User Resets Password; URL Tokens; PINs — same password policy as elsewhere in the application"
           support: direct
           note: >
-            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
+            Requires the application's existing password policy to be applied at reset completion, including the confirm-twice step; Boring treats reset as password creation with no weakened emergency variant.
+        - source: NIST-800-63B
+          locator: "Password verifiers — minimum length (15 single-factor / 8 with MFA), SHOULD allow 64+, SHALL blocklist breached passwords, SHALL NOT impose composition rules"
+          support: direct
+          note: >
+            Establishes the modern policy baseline Boring references — length plus breach blocklist, no composition rules; the rule still defers to the application's documented policy rather than fixing one universal threshold.
       edge_cases: []
       related_rules: [BORING-AUTH-RESET-009]
       verification:
@@ -357,10 +377,15 @@ spec:
       sources: [OWASP-FORGOT-PASSWORD, OWASP-ASVS]
       evidence:
         - source: OWASP-FORGOT-PASSWORD
-          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          locator: "User Resets Password — ask to invalidate all existing sessions or invalidate automatically; do not log the user in automatically"
           support: direct
           note: >
-            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
+            Requires offering or performing session invalidation after reset and prohibits automatic login, since the token holder is not always the account owner.
+        - source: OWASP-ASVS
+          locator: "V7.4 Session Termination (7.4.3: option to terminate all other active sessions after a credential change)"
+          support: direct
+          note: >
+            Requires the ability to terminate other active sessions after an authentication-factor change; Boring applies this to the post-reset flow with an explicit-preserve opt-out.
       edge_cases: [BORING-EDGE-AUTH-SESSION-001]
       related_rules: [BORING-AUTH-SESSION-007]
       verification:
@@ -396,10 +421,15 @@ spec:
       sources: [OWASP-FORGOT-PASSWORD, OWASP-ASVS]
       evidence:
         - source: OWASP-FORGOT-PASSWORD
-          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          locator: "User Resets Password — send an email informing the user the password was reset; do not send the password in the email"
           support: direct
           note: >
-            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
+            Requires a post-reset notification to the user without including the password; Boring extends the inert-notification requirement to tokens and working reset links, which would otherwise be a second takeover key.
+        - source: OWASP-ASVS
+          locator: "V6.3.7"
+          support: direct
+          note: >
+            Requires notifying users after credential resets or username/email changes; Boring scopes this to the address of record held before the reset.
       edge_cases: []
       related_rules: [BORING-AUTH-RESET-012]
       verification:
@@ -414,16 +444,21 @@ spec:
       tags: [detection, notifications]
 
     - id: BORING-AUTH-RESET-011
-      title: Reset tokens must be stored as securely as passwords
+      title: Reset-token values at rest must not be recoverable
       level: SHOULD
       status: draft
       statement: >
-        Reset tokens at rest should be protected like credentials — hashed (with a
-        password-hashing function) or stored in an equivalently secured secret
-        store — and each token must be linked to exactly one account.
+        Stored reset-token data should not allow recovery of a working token after
+        a read-only breach: keep only a non-recoverable representation (for
+        example a hash verified by comparison on presentation) or in equivalently
+        protected secret infrastructure, with each token bound to exactly one
+        account. Short single-factor codes need a slow, salted hash and throttling
+        because their entropy is low; high-entropy tokens still must not sit in
+        plaintext columns, backups, or logs.
       why:
         - A database dump containing live reset tokens converts a data breach into immediate account takeover, before users rotate anything.
-        - OWASP requires tokens to be stored securely as discussed in the Password Storage Cheat Sheet, and linked to an individual user.
+        - OWASP requires tokens to be stored securely as discussed in the Password Storage Cheat Sheet, and linked to an individual user; the Password Storage sheet describes salted, slow hashing with work factors as the reference mechanism.
+        - The exact hash construction is an implementation choice for the token's entropy and threat model, which is why this stays SHOULD with an equivalent-protection exception rather than mandating one KDF for every token type.
       applies_when:
         - Reset tokens are persisted.
       exceptions:
@@ -436,10 +471,15 @@ spec:
       sources: [OWASP-FORGOT-PASSWORD, OWASP-PASSWORD-STORAGE]
       evidence:
         - source: OWASP-FORGOT-PASSWORD
-          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          locator: "Introduction — Stored securely; General Security Practices — Stored in a secure manner, as discussed in the Password Storage Cheat Sheet; Linked to an individual user in the database"
           support: direct
           note: >
-            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
+            Directly requires secure storage per the Password Storage guidance plus per-user linkage; Boring interprets "securely" as non-recoverable at rest with per-account binding, not as any specific hash algorithm.
+        - source: OWASP-PASSWORD-STORAGE
+          locator: "Password Storage — salted, slow hashing (Argon2id, bcrypt, PBKDF2) with work factors; salt and hash stored per credential"
+          support: derived
+          note: >
+            Provides the reference hashing construction Boring derives token storage from; applied to tokens as a derived interpretation since the sheet targets passwords and Boring allows equivalent secret infrastructure and entropy-appropriate construction.
       edge_cases: []
       related_rules: [BORING-AUTH-RESET-002]
       verification:
@@ -471,13 +511,18 @@ spec:
         - Full reset URLs (with token) in server logs, APM traces, or analytics pageviews.
         - Email link previews and mail-client scanners consuming the single-use token before the user clicks.
         - Third-party assets on the reset page receiving the token via Referer.
-      sources: [OWASP-SESSION-MANAGEMENT]
+      sources: [OWASP-SESSION-MANAGEMENT, OWASP-FORGOT-PASSWORD]
       evidence:
         - source: OWASP-SESSION-MANAGEMENT
-          locator: "Session ID Properties; Cookies; Session ID Life Cycle; Session Expiration"
+          locator: "Session Management Implementation — IDs in URLs disclose via links, logs, browser history, bookmarks, Referer header, search engines; Logging — do not include session IDs in logs, log a salted hash instead"
+          support: derived
+          note: >
+            Documents the URL-secret leakage channels for session identifiers; Boring derives the same treatment for reset tokens in links since a reset URL is likewise a bearer credential, while the delivery decision itself stays product-specific (CONSIDER).
+        - source: OWASP-FORGOT-PASSWORD
+          locator: "URL Tokens — HTTPS reset URLs; Referrer-Policy noreferrer to avoid referrer leakage"
           support: direct
           note: >
-            The cited OWASP-SESSION-MANAGEMENT section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
+            Directly requires HTTPS reset URLs and a noreferrer Referrer Policy on the reset page; Boring generalizes to auditing all retention channels (logs, analytics, previews) for still-valid tokens.
       edge_cases: [BORING-EDGE-AUTH-RESET-011]
       related_rules: [BORING-AUTH-RESET-010]
       verification:
@@ -511,10 +556,10 @@ spec:
       sources: [OWASP-FORGOT-PASSWORD]
       evidence:
         - source: OWASP-FORGOT-PASSWORD
-          locator: "Forgot Password Request; User Resets Password; General Security Practices"
-          support: direct
+          locator: "Introduction; General Security Practices — single-use and invalidation"
+          support: derived
           note: >
-            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
+            OWASP requires single-use invalidation but defines no outstanding-token policy; Boring derives the bounded-exposure default (newest-wins) as an operational interpretation, with the enforceable requirement being a documented, enumeration-safe policy.
       edge_cases: [BORING-EDGE-AUTH-RESET-002]
       related_rules: [BORING-AUTH-RESET-004]
       verification:
@@ -549,10 +594,10 @@ spec:
       sources: [OWASP-WSTG]
       evidence:
         - source: OWASP-WSTG
-          locator: "Testing for Unvalidated Redirects and Forwards"
+          locator: "Testing for Client-side URL Redirect (WSTG-CLNT-04)"
           support: direct
           note: >
-            The cited OWASP-WSTG section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
+            Covers open redirection where user-controlled input selects an external target for phishing; Boring applies this to the post-reset redirect parameter with an allowlist or fixed-target requirement.
       edge_cases: []
       related_rules: []
       verification:

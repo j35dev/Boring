@@ -61,16 +61,26 @@ or use the same approach with any catalog entry below.
 | Integrations | [Webhooks](specs/webhooks/README.md) | 13 | duplicates, ordering, retries, signatures |
 | Data | [File uploads](specs/file-uploads/README.md) | 12 | type, storage, authorization, resource limits |
 | Data | [Input, text & Unicode](specs/input-validation/README.md) | 12 | normalization, lengths, parsing, spoofing |
+| API | [Pagination](specs/pagination/README.md) | 9 | ordering, cursors, boundaries, limits |
 
 Cross-cutting edge-case datasets cover [authentication state](edge-cases/authentication/password-reset-state.yaml),
 [sessions](edge-cases/authentication/sessions-state.yaml), [webhook delivery](edge-cases/webhooks/delivery.yaml),
 [files](edge-cases/files/uploads.yaml), [email](edge-cases/email/addresses.yaml), [date and time](edge-cases/date-time/timestamps.yaml),
-[numeric boundaries](edge-cases/numbers/boundaries.yaml), and [Unicode/text](edge-cases/strings/unicode.yaml).
+[numeric boundaries](edge-cases/numbers/boundaries.yaml), [Unicode/text](edge-cases/strings/unicode.yaml),
+and [pagination traversal](edge-cases/pagination/traversal.yaml).
 
 An edge case can be a value, state, boundary, sequence, retry, concurrency, locale,
 environment, authorization, privacy, compatibility, failure, or recovery scenario.
 For example: a webhook delivered twice, two resets completing together, a DST
 transition, or `résumé.pdf`.
+
+## Machine-readable dataset
+
+Tools and agents can consume the full normalized corpus without an API or CLI:
+[`dist/boring.json`](dist/boring.json) is the deterministic generated snapshot of
+every `spec.yaml`, every `edge-cases/**/*.yaml`, and the source registry.
+Regenerate it with `npm run build:dataset` after structured data changes; the YAML
+files remain canonical.
 
 ## How Boring works
 
@@ -134,7 +144,7 @@ well-sourced engineering reference today, not a formal industry standard, securi
 guarantee, or complete catalog.
 
 Planned areas include API keys, rate limiting, account deletion, invitations,
-pagination, background jobs, money, and dates/time — only when they meet the same bar.
+background jobs, money, and dates/time — only when they meet the same bar.
 The [roadmap](docs/roadmap.md) describes the direction without promising dates.
 
 ## FAQ
@@ -164,6 +174,7 @@ schemas/      JSON Schemas for the data model
 docs/        methodology, taxonomy, review policy, and roadmap
 examples/    copyable audit, implementation, and review prompts
 scripts/     maintainers' validation and export tooling
+dist/        generated machine-readable snapshot (dist/boring.json)
 ```
 
 Run `npm install` and `npm run validate` to check the repository locally. The project
