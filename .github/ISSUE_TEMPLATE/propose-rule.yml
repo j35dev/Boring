@@ -1,0 +1,42 @@
+name: Propose a rule
+description: Propose a sourced, atomic requirement for an existing or new spec
+title: "Rule proposal: "
+labels: ["rule", "triage"]
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Proposed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why should it belong in Boring?
+    validations:
+      required: true
+  - type: textarea
+    id: applicability
+    attributes:
+      label: Applicability and exceptions
+      description: Explain when it applies and when a legitimate application may differ.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Link the source and identify the relevant section or locator.
+    validations:
+      required: true
+  - type: textarea
+    id: counterexamples
+    attributes:
+      label: Potential counterexamples
+  - type: dropdown
+    id: level
+    attributes:
+      label: Suggested requirement level
+      options: [MUST, SHOULD, CONSIDER]
+    validations:
+      required: true

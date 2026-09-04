@@ -12,8 +12,10 @@ Direction, not promises. Scope is added only when it can meet the quality bar in
 - Cross-cutting edge-case datasets: Unicode/text, email, date & time, files,
   numeric boundaries, webhook delivery, authentication state
 - A source registry with provenance for every claim
-- Repository validation (schemas, IDs, references) in CI
-- Contribution guide designed for future community growth
+- Evidence blocks, a full normative audit, and a documented review ledger
+- Repository validation (schemas, IDs, references, evidence, and Markdown examples) in CI
+- A deterministic generated JSON snapshot for agents and downstream tooling
+- Contribution and review workflows designed for future community growth
 - A documented — not implemented — test strategy ([test-strategy.md](test-strategy.md))
 
 ## v0.2 — more domains
@@ -34,11 +36,11 @@ Money is deliberately *not* rushed into v0.1: it is deceptively complicated, and
 shallow money section would undercut the project's credibility. It deserves full
 treatment using Unicode CLDR and authoritative payment-provider documentation.
 
-## v0.3 — machine consumption
+## v0.3 — machine consumption at scale
 
 - Published, versioned schemas
-- A generated JSON dataset for programmatic consumption
 - Search/index over the knowledge graph
+- Stable release and compatibility policy for the generated dataset
 - Agent skill files / integration snippets for common coding agents
 
 ## Later — Boring Tests

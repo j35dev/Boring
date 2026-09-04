@@ -31,10 +31,15 @@ best evidence for *vendor* behavior and must stay scoped to that vendor.
 |---|---|---|
 | 1 | `standard` | IETF RFCs, WHATWG specs, W3C specs, Unicode UAX/UTS, Unicode CLDR, IANA TZDB |
 | 2 | `authoritative-guidance` | OWASP ASVS, OWASP Cheat Sheet Series, NIST SP 800-63 |
-| 3 | `vendor-docs` | Stripe, GitHub, AWS, Cloudflare, MDN |
-| 4 | `corpus` | Big List of Naughty Strings, Web Platform Tests |
-| 5 | `incident-report` | engineering postmortems, documented incidents |
-| 6 | `community` | field experience from contributors and maintainers |
+| 3 | `official-vendor-documentation` | Stripe, GitHub, AWS, Cloudflare, MDN |
+| 4 | `oss-corpus` | Big List of Naughty Strings, Web Platform Tests |
+| 5 | `engineering-incident` | engineering postmortems, documented incidents |
+| 6 | `community-evidence` | field experience from contributors and maintainers |
+
+The registry retains a small set of legacy type values for compatibility with early
+entries. New sources should use the more descriptive classes: `security-standard`,
+`official-vendor-documentation`, `reference-data`, `oss-corpus`,
+`engineering-incident`, `research`, or `community-evidence`.
 
 ## How Boring uses sources
 

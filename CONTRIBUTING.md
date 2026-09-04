@@ -6,6 +6,23 @@ backed by evidence, scoped honestly. This guide explains how to contribute one.
 Before proposing content, read [docs/philosophy.md](docs/philosophy.md) and
 [docs/methodology.md](docs/methodology.md). They are the review criteria.
 
+## Two ways to contribute
+
+### Easy path: report the pain
+
+If a production bug or surprising edge case made you say “how did we not think of
+that?”, open [Something boring bit me](.github/ISSUE_TEMPLATE/something-boring-bit-me.yml).
+Describe what happened, what you expected, and the smallest useful scenario. No YAML,
+rule IDs, or evidence-tier knowledge is required; maintainers can research and
+normalize it.
+
+### Advanced path: change the graph
+
+If you want to add or modify structured content, work with IDs, schemas, evidence
+locators, levels, applicability, sources, cross-references, and validation. Start with
+the [style guide](docs/style-guide.md), [review policy](docs/review-policy.md), and
+[reviewer guide](docs/reviewer-guide.md), then use Password Reset as the quality model.
+
 ## What we accept
 
 - A **new rule** for an existing spec: one testable requirement with sources, scope,

@@ -11,6 +11,10 @@ Guidance for AI agents working **in this repository** (improving Boring itself):
   support; contextual policies must be `decision_required`, not universal requirements.
 - Keep `README.md` and `spec.yaml` in sync per spec, preserve ID stability, and run
   `npm run validate` before finishing.
+- Every rule and important edge case needs `evidence` with a registered source,
+  locator, support type, and note; contextual evidence cannot justify MUST/SHOULD.
+- Treat `spec.yaml` and edge-case YAML as canonical. Run `npm run build:dataset` when
+  structured data changes so `dist/boring.json` stays deterministic.
 
 If you are an agent **consuming Boring** to implement or audit a feature in someone
 else's codebase, start at [README.md](README.md) ("Using Boring") and the relevant

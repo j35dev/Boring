@@ -9,7 +9,7 @@ spec (specs/**)
   └── rule (one testable, reviewable requirement)
         ├── id, title, level (MUST / SHOULD / CONSIDER)
         ├── why, applies_when, exceptions, failure_modes
-        ├── sources → sources/registry.yaml
+        ├── sources + evidence → sources/registry.yaml
         ├── edge_cases → edge-cases/** (by ID)
         └── verification: given / when / expect scenarios
 
@@ -18,13 +18,18 @@ edge-case dataset (edge-cases/**/*.yaml)
         ├── id, title, kind, risk
         ├── input values (for value/boundary cases)
         ├── scenario: given / when / expect
-        ├── sources → sources/registry.yaml
+        ├── sources + evidence → sources/registry.yaml
         └── related_rules → rules (by ID)
 ```
 
 The Markdown (`README.md` per spec) is the primary human and agent experience. The
 YAML is the same content in normalized form — infrastructure for search, tooling,
 test generation, and audits.
+
+`spec.yaml` and the edge-case datasets are canonical. `dist/boring.json` is a generated,
+deterministic snapshot for simple machine consumers; run `npm run build:dataset` after
+changing structured data. It is not an API and should not become a second source of
+truth.
 
 ## Directory conventions
 
@@ -55,7 +60,7 @@ BORING-EDGE-<SCOPE>-NNN            edge cases   BORING-EDGE-WEBHOOK-001
 
 ## Edge-case kinds
 
-An edge case is not merely a weird value. Boring classifies edge cases into nine kinds,
+An edge case is not merely a weird value. Boring classifies edge cases into kinds,
 because different kinds fail differently and are verified differently.
 
 | Kind | Definition | Examples |
@@ -69,6 +74,10 @@ because different kinds fail differently and are verified differently.
 | `locale` | Internationalization: text, number, and time conventions differ by language or region. | decimal comma; RTL text; a DST transition day; Unicode domains. |
 | `environment` | The infrastructure or network misbehaves around an otherwise correct implementation. | client disconnects mid-upload; network timeout after the server already processed the operation. |
 | `authorization` | Identity and permission interact with the behavior. | authenticated user requests another user's resource; session that outlives a privilege revocation. |
+| `privacy` | The behavior can expose, retain, or incorrectly combine personal information. | reset responses reveal account existence; a file URL leaks private content. |
+| `compatibility` | A valid change or input crosses an evolving protocol or implementation boundary. | unknown webhook event type; a new JSON field. |
+| `failure` | An explicit error or partial-failure path changes the outcome. | storage fails after metadata is written; a parser rejects a malformed value. |
+| `recovery` | The system must restore or reconcile behavior after interruption or loss. | replay missed webhook deliveries; clean up an interrupted upload. |
 
 ## Risk categories
 

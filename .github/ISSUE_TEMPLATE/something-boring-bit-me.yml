@@ -1,0 +1,43 @@
+name: Something boring bit me
+description: Report a production bug or edge case without knowing Boring's schemas
+title: "Edge case: "
+labels: ["edge-case", "triage"]
+body:
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened?
+      description: Describe the failure in plain language.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: scenario
+    attributes:
+      label: Smallest useful scenario
+      description: Include the inputs, state, sequence, retry, or concurrency involved.
+      placeholder: "Given... When... Expect..."
+    validations:
+      required: true
+  - type: input
+    id: feature
+    attributes:
+      label: What kind of feature was involved?
+  - type: textarea
+    id: fix
+    attributes:
+      label: How did you fix it?
+  - type: textarea
+    id: sources
+    attributes:
+      label: Relevant standards or documentation
+      description: Optional. Links are welcome; no source knowledge is required.
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else?

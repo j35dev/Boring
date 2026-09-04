@@ -1,0 +1,30 @@
+name: Improve evidence
+description: Suggest a more precise source, locator, or interpretation
+title: "Evidence: "
+labels: ["evidence", "triage"]
+body:
+  - type: input
+    id: id
+    attributes:
+      label: Boring ID
+      placeholder: BORING-WEBHOOK-001 or BORING-EDGE-WEBHOOK-001
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current evidence problem
+      description: What does the current source fail to establish?
+    validations:
+      required: true
+  - type: textarea
+    id: replacement
+    attributes:
+      label: More precise evidence
+      description: Link the source, section, version, and access date if known.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Suggested wording or level change

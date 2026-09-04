@@ -4,7 +4,9 @@ How Boring could eventually move from knowledge to executable verification — a
 nothing executable ships in v0.1.
 
 Boring's data is already shaped for verification: every rule carries
-`given / when / expect` acceptance scenarios, stable IDs, and typed edge cases. This
+`given / when / expect` acceptance scenarios, stable IDs, typed edge cases, and
+verification visibility (`black-box`, `source-review`, `configuration`,
+`infrastructure`, or `manual`). This
 document explores candidate architectures for *Boring Tests*, records their trade-offs,
 and states the open questions that would drive a decision. **No architecture is chosen
 here, and no framework is implemented.** The runtime design will be its own research

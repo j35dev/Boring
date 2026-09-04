@@ -3,6 +3,10 @@
 This document describes how Boring content is researched, written, and reviewed.
 Every contribution — maintainer or community — follows the same process.
 
+The canonical structured record is `spec.yaml` or an edge-case dataset. Markdown
+README files provide the human navigation layer. Do not maintain a second, conflicting
+normative copy by hand.
+
 ## The two admission questions
 
 Before adding any requirement or edge case, answer:
@@ -80,6 +84,19 @@ tie scenarios to Gherkin/Cucumber without a strong reason.
 For important or controversial rules, find additional evidence. Prefer primary sources
 over secondary write-ups. If authoritative sources disagree, or behavior depends on
 provider or product policy, document the disagreement instead of picking a winner.
+
+### Adversarial counterexample review
+
+Before merge, try to construct a legitimate application where each MUST or SHOULD
+does not apply. If that counterexample is real, narrow the scope, downgrade the level,
+or make the behavior `decision_required`. See the [reviewer guide](reviewer-guide.md).
+
+### Record evidence and verify the graph
+
+Each rule and important edge case records `evidence` with a registry source, a precise
+locator, and `direct`, `derived`, or `contextual` support. `contextual` evidence may
+explain a failure mode or provider behavior but cannot establish a universal MUST or
+SHOULD. Run `npm run validate` before opening a pull request.
 
 ## Source quality tiers
 
