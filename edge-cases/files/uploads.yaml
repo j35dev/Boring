@@ -1,0 +1,253 @@
+dataset:
+  id: files-uploads
+  title: File uploads
+  description: >
+    Inputs, boundaries, and situations that break file-upload features: sizes,
+    hostile filenames, duplicates, concurrency, type mismatches, resource
+    bombs, and interruptions. These cases are about application correctness
+    and resilience — not about payload construction.
+  updated: "2026-09-04"
+
+cases:
+  - id: BORING-EDGE-FILE-001
+    title: Zero-byte file
+    kind: value
+    risk: [correctness, ux]
+    input:
+      - description: an empty file with an accepted extension
+        value: ""
+    scenario:
+      given: a user uploads a zero-byte file
+      when: validation, storage, download, and preview handle it
+      expect:
+        - behavior follows the application's documented policy at every step, without crashes or opaque errors
+    sources: [OWASP-FILE-UPLOAD]
+    related_rules: [BORING-UPLOAD-006]
+    tags: [empty, boundary]
+
+  - id: BORING-EDGE-FILE-002
+    title: File exactly at the size limit, and one byte over
+    kind: boundary
+    risk: [correctness, availability]
+    scenario:
+      given: a configured maximum upload size
+      when: uploads of exactly the limit and one byte over are submitted
+      expect:
+        - the at-limit upload succeeds intact
+        - the over-limit upload is rejected cleanly with a defined error — never truncated into a stored object
+    sources: [OWASP-FILE-UPLOAD]
+    related_rules: [BORING-UPLOAD-001]
+    tags: [limits, boundary]
+
+  - id: BORING-EDGE-FILE-003
+    title: Huge upload exhausting memory or disk
+    kind: value
+    risk: [availability, performance]
+    scenario:
+      given: a client (benign or not) submits a file orders of magnitude beyond expected sizes
+      when: the server handles the request
+      expect:
+        - the server streams or bounds memory rather than buffering the whole file
+        - the request is rejected or degrades gracefully instead of exhausting the instance
+    sources: [OWASP-FILE-UPLOAD]
+    related_rules: [BORING-UPLOAD-001]
+    tags: [dos, streaming]
+
+  - id: BORING-EDGE-FILE-004
+    title: Filename containing path traversal
+    kind: value
+    risk: [security, data-integrity]
+    input:
+      - description: relative traversal
+        value: "../../etc/overwrite-me"
+      - description: Windows separators
+        value: "..\\..\\windows\\temp\\evil"
+      - description: absolute path
+        value: "/var/lib/app/overwrite-me"
+    scenario:
+      given: an upload whose client-supplied filename contains traversal sequences
+      when: the file is stored
+      expect:
+        - storage uses a server-generated key; the hostile filename never reaches a filesystem path or object key
+    sources: [OWASP-FILE-UPLOAD]
+    related_rules: [BORING-UPLOAD-004]
+    tags: [path-traversal, filenames]
+
+  - id: BORING-EDGE-FILE-005
+    title: Very long filename
+    kind: boundary
+    risk: [correctness, ux]
+    input:
+      - description: 255-byte name component (typical filesystem limit)
+        value: "a-very-long-filename-that-is-exactly-255-bytes-...-in-total-length.pdf"
+      - description: 1000+ characters
+        value: "x1001.png"
+    scenario:
+      given: uploads with filenames at and beyond filesystem and database limits
+      when: they are validated and stored
+      expect:
+        - behavior follows the documented limits (BORING-UPLOAD-005), with clear errors instead of storage-time 500s
+    sources: [OWASP-FILE-UPLOAD]
+    related_rules: [BORING-UPLOAD-005]
+    tags: [filenames, limits]
+
+  - id: BORING-EDGE-FILE-006
+    title: Hostile-but-legal filenames
+    kind: value
+    risk: [correctness, security]
+    input:
+      - description: Windows reserved device name
+        value: "CON.png"
+      - description: dotfile
+        value: ".htaccess"
+      - description: emoji and combining marks
+        value: "résumé-🙂-v2.pdf"
+      - description: RTL filename
+        value: "سمند.pdf"
+      - description: trailing dots and spaces (Windows strips them)
+        value: "report.pdf. ."
+    scenario:
+      given: uploads with filenames that are legal for users but hostile to storage systems
+      when: they are stored, displayed, and downloaded
+      expect:
+        - storage keys are server-generated; the original name survives only as sanitized metadata
+        - display and download handle Unicode, RTL, and odd characters without corruption
+    sources: [OWASP-FILE-UPLOAD]
+    related_rules: [BORING-UPLOAD-004, BORING-UPLOAD-005]
+    tags: [filenames, unicode]
+
+  - id: BORING-EDGE-FILE-007
+    title: Same filename uploaded twice
+    kind: state
+    risk: [data-integrity, correctness]
+    scenario:
+      given: a file already stored under a (user-visible) name
+      when: another upload arrives with the same name
+      expect:
+        - the result follows the documented collision policy — no silent overwrite of someone else's object
+    sources: [OWASP-FILE-UPLOAD]
+    related_rules: [BORING-UPLOAD-007]
+    tags: [collision, overwrite]
+
+  - id: BORING-EDGE-FILE-008
+    title: Concurrent uploads to the same storage key
+    kind: concurrency
+    risk: [data-integrity]
+    scenario:
+      given: two uploads targeting the same key at the same time
+      when: both complete
+      expect:
+        - the final object is exactly one of the uploads, deterministically, and readers never observe a half-written file
+    sources: [OWASP-FILE-UPLOAD]
+    related_rules: [BORING-UPLOAD-007, BORING-UPLOAD-011]
+    tags: [concurrency, atomicity]
+
+  - id: BORING-EDGE-FILE-009
+    title: Retrieving another user's upload
+    kind: authorization
+    risk: [security, privacy]
+    scenario:
+      given: a private file belonging to user A, with a URL whose key is sequential, guessable, or shared
+      when: user B (or an anonymous visitor) requests the URL
+      expect:
+        - retrieval is denied per the file's visibility policy
+        - unknowable-by-construction URLs are treated as obfuscation, not authorization
+    sources: [OWASP-FILE-UPLOAD]
+    related_rules: [BORING-UPLOAD-008]
+    tags: [idor, access-control]
+
+  - id: BORING-EDGE-FILE-010
+    title: Double extension
+    kind: value
+    risk: [security]
+    input:
+      - description: executable disguised as document
+        value: "invoice.pdf.exe"
+      - description: right-to-left override disguise
+        value: "invoice\u202Eexe.pdf"
+    scenario:
+      given: an upload whose name carries a doubled or disguised extension
+      when: type validation and download naming run
+      expect:
+        - validation judges content (BORING-UPLOAD-002), not the trailing extension
+        - downloads do not present an executable extension the server did not intend to serve
+    sources: [OWASP-FILE-UPLOAD]
+    related_rules: [BORING-UPLOAD-002, BORING-UPLOAD-003]
+    tags: [extension, disguise]
+
+  - id: BORING-EDGE-FILE-011
+    title: Declared type does not match content
+    kind: value
+    risk: [security, correctness]
+    input:
+      - description: HTML content declared as PNG
+        value: "Content-Type: image/png with body <script>…</script>"
+      - description: executable content named .jpg
+        value: "photo.jpg containing an ELF/PE header"
+    scenario:
+      given: an upload whose extension or declared Content-Type disagrees with its bytes
+      when: the server validates it
+      expect:
+        - the mismatch is detected by content inspection and handled per policy (reject, quarantine, or store as the true type)
+    sources: [OWASP-FILE-UPLOAD]
+    related_rules: [BORING-UPLOAD-002]
+    tags: [mime, spoofing]
+
+  - id: BORING-EDGE-FILE-012
+    title: Upload that is active content (SVG/HTML)
+    kind: value
+    risk: [security]
+    input:
+      - description: scripted SVG
+        value: "<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>"
+    scenario:
+      given: an uploaded file that a browser would render as HTML or SVG with scripts
+      when: it is stored and served to other users
+      expect:
+        - serving never renders it inline in the application's origin (attachment disposition, nosniff, safe content type, or a sandboxed origin)
+    sources: [OWASP-FILE-UPLOAD]
+    related_rules: [BORING-UPLOAD-003]
+    tags: [xss, serving]
+
+  - id: BORING-EDGE-FILE-013
+    title: Image decompression bomb
+    kind: value
+    risk: [performance, availability]
+    scenario:
+      given: a small compressed image whose header declares enormous pixel dimensions
+      when: the server decodes or processes it
+      expect:
+        - dimensions and allocation are bounded before decoding (no trust in header-declared sizes)
+        - the bomb is rejected without exhausting memory
+    sources: [OWASP-FILE-UPLOAD]
+    related_rules: [BORING-UPLOAD-009]
+    tags: [dos, images]
+
+  - id: BORING-EDGE-FILE-014
+    title: Archive bomb and archive traversal
+    kind: value
+    risk: [performance, security, availability]
+    scenario:
+      given: an archive that expands enormously (nested or high-ratio), or whose entry names contain traversal sequences
+      when: the server extracts it
+      expect:
+        - pre-extraction checks bound total size, file count, per-file size, and depth
+        - entry paths cannot escape the extraction sandbox
+    sources: [OWASP-FILE-UPLOAD]
+    related_rules: [BORING-UPLOAD-010]
+    tags: [dos, zip-slip]
+
+  - id: BORING-EDGE-FILE-015
+    title: Interrupted upload
+    kind: environment
+    risk: [data-integrity, ux]
+    scenario:
+      given: an upload interrupted mid-transfer (client closed, network drop, server restart)
+      when: storage and file listings are inspected
+      expect:
+        - no object appears complete unless assembly verified every part
+        - temporary data is quarantined or cleaned up per the documented retention policy
+        - resumable retries produce the intended content, exactly once
+    sources: [OWASP-FILE-UPLOAD, RFC-9110]
+    related_rules: [BORING-UPLOAD-011, BORING-UPLOAD-007]
+    tags: [interruption, resumable]

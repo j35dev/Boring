@@ -1,0 +1,367 @@
+dataset:
+  id: strings-unicode
+  title: Strings & Unicode
+  description: >
+    Text values that break implementations: canonically equivalent encodings,
+    invisible characters, confusables, multi-code-point graphemes, control
+    characters, and encoding boundaries. Inspired by the categories documented
+    in the Unicode standard and security mechanisms (UAX #15, UAX #29, UTS #39,
+    UTS #36) and by corpora such as the Big List of Naughty Strings — authored
+    as original representative cases, not copied from any corpus.
+  updated: "2026-09-04"
+
+cases:
+  - id: BORING-EDGE-TEXT-001
+    title: Canonically equivalent strings (NFC vs NFD)
+    kind: value
+    risk: [correctness, data-integrity]
+    input:
+      - description: precomposed é (U+00E9)
+        value: "José"
+      - description: decomposed e + combining acute (U+0065 U+0301)
+        value: "José"
+    scenario:
+      given: two encodings of the same visible name, one precomposed and one decomposed
+      when: both are submitted to any uniqueness-sensitive flow (registration, duplicate check, search)
+      expect:
+        - the application treats them according to its documented normalization policy — the same, consistently
+    sources: [UNICODE-UAX15]
+    related_rules: [BORING-INPUT-001]
+    tags: [normalization, identity]
+
+  - id: BORING-EDGE-TEXT-002
+    title: Compatibility forms (full-width Latin)
+    kind: value
+    risk: [correctness, ux]
+    input:
+      - description: full-width Latin (U+FF21 U+FF22 U+FF23)
+        value: "ＡＢＣ"
+      - description: plain ASCII
+        value: "ABC"
+    scenario:
+      given: full-width characters typed by CJK input methods alongside their ASCII forms
+      when: the strings are compared, searched, or stored
+      expect:
+        - behavior follows the documented policy (NFKC folding for codes/identifiers is a common choice); display is not corrupted either way
+    sources: [UNICODE-UAX15]
+    related_rules: [BORING-INPUT-001]
+    tags: [normalization, cjk]
+
+  - id: BORING-EDGE-TEXT-003
+    title: Combining mark with no base character
+    kind: value
+    risk: [correctness, ux]
+    input:
+      - description: combining acute alone
+        value: "́"
+    scenario:
+      given: input that is only a combining mark (or starts with one)
+      when: it is validated, stored, and displayed
+      expect:
+        - the application neither crashes nor miscounts it; display behavior is deliberate (placeholder, rejection, or visible artifact)
+    sources: [UNICODE-UAX29]
+    related_rules: [BORING-INPUT-005]
+    tags: [combining-marks]
+
+  - id: BORING-EDGE-TEXT-004
+    title: Excessive combining marks (Zalgo)
+    kind: value
+    risk: [ux, correctness]
+    input:
+      - description: a base letter with hundreds of stacked combining marks
+        value: "Z̸̵̡̢̧̨̛̛̖̗̘̙̜̝̞̟̠̖̗̘̙̜̝̞̟̠͇̺̊̋̌̍̎̏̐̑̒̓̔̊̋̌̍̎̏̐̑̒̓̔̿̿_extraction-limit"
+    scenario:
+      given: input with extreme numbers of combining marks
+      when: length limits, rendering, and storage handle it
+      expect:
+        - limits and counting use the documented unit; rendering and downstream systems are not broken by mark stacking
+    sources: [UNICODE-UAX29]
+    related_rules: [BORING-INPUT-002, BORING-INPUT-005]
+    tags: [combining-marks, rendering]
+
+  - id: BORING-EDGE-TEXT-005
+    title: Zero-width space inside an identifier
+    kind: value
+    risk: [security, correctness]
+    input:
+      - description: promo code with an invisible U+200B before the last character
+        value: "SUMMER2026​"
+      - description: username with embedded U+200B
+        value: "ad​min"
+    scenario:
+      given: identifiers or codes containing zero-width characters
+      when: they are looked up, compared, or displayed
+      expect:
+        - the documented invisible-character policy decides; visual comparison alone is never the discriminator
+    sources: [UNICODE-TR36, UNICODE-UTS39]
+    related_rules: [BORING-INPUT-007]
+    tags: [invisible, spoofing]
+
+  - id: BORING-EDGE-TEXT-006
+    title: Zero-width joiner inside emoji
+    kind: value
+    risk: [correctness, ux]
+    input:
+      - description: family emoji (5 people joined by U+200D ZWJ)
+        value: "👨‍👩‍👧‍👦"
+    scenario:
+      given: text where U+200D is legitimate (emoji composition) rather than hostile
+      when: identifiers, search, and length counting process it
+      expect:
+        - emoji sequences count as single graphemes; the invisible-character policy for identifiers is applied without breaking legitimate emoji in prose
+    sources: [UNICODE-UAX29, UNICODE-UTS39]
+    related_rules: [BORING-INPUT-002, BORING-INPUT-007]
+    tags: [emoji, zwj]
+
+  - id: BORING-EDGE-TEXT-007
+    title: Byte-order mark as content
+    kind: value
+    risk: [correctness]
+    input:
+      - description: BOM (U+FEFF) as the first character
+        value: "﻿John"
+    scenario:
+      given: text beginning with (or containing) U+FEFF, often from file uploads or clipboard copies
+      when: identifiers, search prefixes, and comparisons process it
+      expect:
+        - the documented policy handles it (strip as a byte-order artifact, or preserve deliberately); lookups do not silently miss
+    sources: [UNICODE-UAX15]
+    related_rules: [BORING-INPUT-007, BORING-INPUT-006]
+    tags: [bom, invisible]
+
+  - id: BORING-EDGE-TEXT-008
+    title: Bidi control characters in user text
+    kind: value
+    risk: [security, ux]
+    input:
+      - description: right-to-left override (U+202E) mid-string
+        value: "user‮evil"
+      - description: isolate-scoped RTL name
+        value: "سمند"
+    scenario:
+      given: user text containing bidi control characters, and legitimate RTL text
+      when: it is stored and rendered in a mixed-direction interface
+      expect:
+        - legitimate RTL text renders correctly and is never stripped
+        - bidi control characters cannot visually reorder surrounding UI or log lines (isolation is applied)
+    sources: [UNICODE-UAX9, UNICODE-TR36]
+    related_rules: [BORING-INPUT-009]
+    tags: [bidi, rtl, spoofing]
+
+  - id: BORING-EDGE-TEXT-009
+    title: Confusable homoglyphs
+    kind: value
+    risk: [security]
+    input:
+      - description: Cyrillic а (U+0430) in place of Latin a
+        value: "pаypal"
+      - description: rn standing in for m
+        value: "rnicrosoft"
+    scenario:
+      given: an identifier whose skeleton matches an existing, trusted identifier
+      when: registration or rename is attempted
+      expect:
+        - the application detects confusability (UTS #39 skeleton comparison) and applies its documented allow/block policy
+    sources: [UNICODE-UTS39]
+    related_rules: [BORING-INPUT-008]
+    tags: [spoofing, phishing]
+
+  - id: BORING-EDGE-TEXT-010
+    title: Mixed-script text
+    kind: value
+    risk: [security, correctness]
+    input:
+      - description: Cyrillic + Latin mixed
+        value: "Раypal.com"
+      - description: Latin + Greek
+        value: "noreply@paypaΙ.com"
+    scenario:
+      given: an identifier mixing scripts without a legitimate reason
+      when: identifier creation or display occurs
+      expect:
+        - mixed-script detection (UTS #39 resolved script sets) informs the documented policy
+    sources: [UNICODE-UTS39]
+    related_rules: [BORING-INPUT-008]
+    tags: [mixed-script, spoofing]
+
+  - id: BORING-EDGE-TEXT-011
+    title: Multi-code-point graphemes vs length limits
+    kind: boundary
+    risk: [correctness, ux]
+    input:
+      - description: flag = 2 regional indicators (1 grapheme, 8 UTF-8 bytes)
+        value: "🇺🇦"
+      - description: a 30-grapheme string built from emoji sequences
+        value: "👨‍👩‍👧‍👦👨‍👩‍👧‍👦…"
+    scenario:
+      given: strings whose grapheme, code point, and byte counts differ wildly
+      when: length limits, counters, and truncation run
+      expect:
+        - counting and truncation use the documented unit; no grapheme is split into replacement characters
+    sources: [UNICODE-UAX29]
+    related_rules: [BORING-INPUT-002, BORING-INPUT-004]
+    tags: [graphemes, emoji, length]
+
+  - id: BORING-EDGE-TEXT-012
+    title: Turkish-I class case mappings
+    kind: locale
+    risk: [correctness]
+    input:
+      - description: capital I with dot (U+0130)
+        value: "İstanbul"
+      - description: dotless i (U+0131)
+        value: "ılank"
+    scenario:
+      given: text containing Turkish-I characters
+      when: case-insensitive comparison or lowercasing runs under different locale settings
+      expect:
+        - comparison results are locale-independent (case folding per the documented policy), not an accident of runtime locale
+    sources: [UNICODE-STD]
+    related_rules: [BORING-INPUT-010]
+    tags: [casing, locale]
+
+  - id: BORING-EDGE-TEXT-013
+    title: Skin-tone modifier sequences
+    kind: value
+    risk: [ux, correctness]
+    input:
+      - description: waving hand + medium-dark skin tone
+        value: "👋🏾"
+    scenario:
+      given: an emoji base followed by a skin-tone modifier
+      when: length counting, truncation, and deduplication run
+      expect:
+        - the sequence is treated as one user-perceived character per the documented unit policy
+    sources: [UNICODE-UAX29]
+    related_rules: [BORING-INPUT-002]
+    tags: [emoji, graphemes]
+
+  - id: BORING-EDGE-TEXT-014
+    title: Non-breaking and Unicode spaces
+    kind: value
+    risk: [correctness, ux]
+    input:
+      - description: NBSP (U+00A0) instead of space
+        value: "John Doe"
+      - description: narrow NBSP (U+202F)
+        value: "1 234"
+    scenario:
+      given: space-like characters pasted from rich text or formatting systems
+      when: trimming, comparison, and search process them
+      expect:
+        - the whitespace policy covers Unicode spaces explicitly; they are not silently treated as ordinary ASCII space (or are, deliberately)
+    sources: [UNICODE-STD]
+    related_rules: [BORING-INPUT-006]
+    tags: [whitespace, paste]
+
+  - id: BORING-EDGE-TEXT-015
+    title: Whitespace-only input
+    kind: value
+    risk: [correctness, data-integrity]
+    input:
+      - description: spaces
+        value: "   "
+      - description: tab and newline mixture
+        value: "\t\n "
+      - description: NBSP only
+        value: " "
+    scenario:
+      given: input containing only whitespace characters
+      when: required-field validation runs
+      expect:
+        - whitespace-only values are handled per the documented policy (rejected for required fields, or accepted deliberately) — never stored as real content by accident
+    sources: [UNICODE-STD]
+    related_rules: [BORING-INPUT-006, BORING-INPUT-004]
+    tags: [whitespace, validation]
+
+  - id: BORING-EDGE-TEXT-016
+    title: Encoded and double-encoded payloads
+    kind: value
+    risk: [security]
+    input:
+      - description: URL-encoded script tag
+        value: "%3Cscript%3Ealert(1)%3C/script%3E"
+      - description: double-encoded form
+        value: "%253Cscript%253E"
+    scenario:
+      given: input whose dangerous form appears only after one or more decoding passes
+      when: validation runs in the input pipeline
+      expect:
+        - validation sees the fully decoded form; the decoded value cannot survive to storage or execution unvalidated
+    sources: [OWASP-INPUT-VALIDATION]
+    related_rules: [BORING-INPUT-003]
+    tags: [encoding, validation]
+
+  - id: BORING-EDGE-TEXT-017
+    title: Control characters in text fields
+    kind: value
+    risk: [security, correctness]
+    input:
+      - description: NUL byte
+        value: "user\u0000admin"
+      - description: terminal escape
+        value: "\u001b[31mERROR\u001b[0m"
+      - description: bell character
+        value: "alert\u0007"
+    scenario:
+      given: input containing control characters
+      when: validation, storage, logging, and display process it
+      expect:
+        - the documented control-character policy applies; downstream logs, terminals, and C-based consumers are not corrupted or injected
+    sources: [UNICODE-TR36, OWASP-INPUT-VALIDATION]
+    related_rules: [BORING-INPUT-005]
+    tags: [control-characters, injection]
+
+  - id: BORING-EDGE-TEXT-018
+    title: Unpaired surrogates and invalid UTF-8
+    kind: value
+    risk: [correctness, data-integrity]
+    input:
+      - description: unpaired high surrogate (syntactically expressible in some JSON/JS paths)
+        value: "\uD83D"
+    scenario:
+      given: text that is not validly encodable in UTF-8 (lone surrogates, malformed byte sequences)
+      when: parsing, storage, and output encoding run
+      expect:
+        - no encoder crash or storage corruption; the documented policy replaces, rejects, or strips deterministically
+    sources: [UNICODE-STD]
+    related_rules: [BORING-INPUT-005, BORING-INPUT-003]
+    tags: [encoding, surrogates]
+
+  - id: BORING-EDGE-TEXT-019
+    title: Very long strings at and over limits
+    kind: boundary
+    risk: [performance, correctness, ux]
+    input:
+      - description: exactly at the documented field limit
+        value: "a… (limit-length string)"
+      - description: far over any reasonable limit (e.g., 100k characters)
+        value: "a100001"
+    scenario:
+      given: inputs at and far beyond documented limits
+      when: validation, storage, rendering, and export handle them
+      expect:
+        - at-limit input works end to end; over-limit input is rejected consistently; nothing hangs or degrades service
+    sources: [OWASP-INPUT-VALIDATION]
+    related_rules: [BORING-INPUT-004, BORING-INPUT-002]
+    tags: [length, dos]
+
+  - id: BORING-EDGE-TEXT-020
+    title: Empty string vs null vs absent
+    kind: value
+    risk: [correctness, data-integrity]
+    input:
+      - description: empty string
+        value: ""
+      - description: JSON null
+        value: null
+      - description: field absent entirely
+        value: "__absent__"
+    scenario:
+      given: the three encodings of "no value"
+      when: APIs, forms, and storage receive them
+      expect:
+        - the application distinguishes (or unifies) them per the documented policy, consistently across every entry point
+    sources: [RFC-8259]
+    related_rules: [BORING-INPUT-004, BORING-INPUT-006]
+    tags: [null-handling, api]

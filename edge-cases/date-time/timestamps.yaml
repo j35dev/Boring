@@ -1,0 +1,252 @@
+dataset:
+  id: date-time-timestamps
+  title: Date & time
+  description: >
+    Temporal situations that break implementations: calendar arithmetic,
+    DST transitions, the offset/timezone distinction, timestamp formats and
+    precision, and the moving target of time zone rules. Anchored in RFC 3339
+    for Internet timestamp syntax and the IANA Time Zone Database for zone
+    rules.
+  updated: "2026-09-04"
+
+cases:
+  - id: BORING-EDGE-TIME-001
+    title: February 29
+    kind: value
+    risk: [correctness]
+    input:
+      - description: leap-day birthday
+        value: "2000-02-29"
+    scenario:
+      given: a stored date of February 29
+      when: yearly logic runs (birthdays, anniversaries, recurring billing)
+      expect:
+        - the application's policy for non-leap years is defined (Feb 28, Mar 1, or skip) and applied consistently
+    sources: [RFC-3339]
+    related_rules: []
+    tags: [calendar, leap-year]
+
+  - id: BORING-EDGE-TIME-002
+    title: Month-end arithmetic
+    kind: value
+    risk: [correctness]
+    input:
+      - description: January 31 plus one month
+        value: "2026-01-31 + 1 month"
+    scenario:
+      given: calendar arithmetic on month-end dates
+      when: an add-one-month operation (or similar) is computed
+      expect:
+        - the overflow policy is defined (Jan 31 + 1 month = Feb 28, or an error) and consistent across the system
+    sources: [UNICODE-CLDR]
+    related_rules: []
+    tags: [calendar, arithmetic]
+
+  - id: BORING-EDGE-TIME-003
+    title: DST spring-forward — local times that do not exist
+    kind: locale
+    risk: [correctness]
+    input:
+      - description: 02:30 on a spring-forward day in a zone that jumps 02:00→03:00
+        value: "2026-03-08T02:30:00 America/New_York"
+    scenario:
+      given: scheduling logic that accepts local wall-clock times
+      when: a user requests a local time that does not exist on a transition day
+      expect:
+        - the outcome is defined (shift forward, reject, or map to UTC explicitly) and consistent
+    sources: [IANA-TZDB]
+    related_rules: []
+    tags: [dst, scheduling]
+
+  - id: BORING-EDGE-TIME-004
+    title: DST fall-back — local times that occur twice
+    kind: locale
+    risk: [correctness]
+    input:
+      - description: 01:30 occurs twice on a fall-back day
+        value: "2026-11-01T01:30:00 America/New_York"
+    scenario:
+      given: scheduling or logging logic over a repeated local hour
+      when: two events share the same local wall-clock time but different instants
+      expect:
+        - instants are distinguished (stored in UTC with zone rules, not naive local time)
+    sources: [IANA-TZDB]
+    related_rules: []
+    tags: [dst, ordering]
+
+  - id: BORING-EDGE-TIME-005
+    title: Recurring events across DST transitions
+    kind: locale
+    risk: [correctness, ux]
+    scenario:
+      given: a weekly meeting defined as "09:00 America/New_York"
+      when: DST shifts the offset between occurrences
+      expect:
+        - recurrence is computed in the event's zone (09:00 local stays 09:00), not by adding fixed 168-hour intervals in UTC
+    sources: [IANA-TZDB]
+    related_rules: []
+    tags: [dst, recurrence]
+
+  - id: BORING-EDGE-TIME-006
+    title: Fixed offset stored instead of a time zone
+    kind: value
+    risk: [correctness]
+    input:
+      - description: offset captured in January, wrong in July
+        value: "America/New_York mis-stored as -05:00"
+    scenario:
+      given: a system that stores users' UTC offsets rather than their time zones
+      when: DST changes the real offset
+      expect:
+        - the data model distinguishes UTC offset (a number) from time zone (rules that produce offsets); timestamps stored as instants (UTC) are immune
+    sources: [IANA-TZDB, RFC-3339]
+    related_rules: []
+    tags: [timezones, data-model]
+
+  - id: BORING-EDGE-TIME-007
+    title: Date-only values treated as timestamps
+    kind: value
+    risk: [correctness, ux]
+    input:
+      - description: birthday stored as midnight timestamp
+        value: "1990-06-15T00:00:00Z"
+    scenario:
+      given: a date-only fact (birthday, expiry date) stored as a UTC midnight timestamp
+      when: it is displayed in time zones behind UTC
+      expect:
+        - the date does not shift to the previous day; date-only semantics are kept separate from instants
+    sources: [RFC-3339]
+    related_rules: []
+    tags: [date-only, off-by-one]
+
+  - id: BORING-EDGE-TIME-008
+    title: End-of-day boundaries
+    kind: boundary
+    risk: [correctness]
+    input:
+      - description: inclusive end written as 23:59:59 vs exclusive next-day 00:00
+        value: "2026-09-04T23:59:59Z vs 2026-09-05T00:00:00Z"
+    scenario:
+      given: range queries or expiry checks for "end of day"
+      when: the boundary is computed
+      expect:
+        - the boundary convention (inclusive end instant vs exclusive next start) is consistent everywhere; no instant falls into both or neither range
+    sources: [RFC-3339]
+    related_rules: []
+    tags: [boundaries, ranges]
+
+  - id: BORING-EDGE-TIME-009
+    title: RFC 3339 format variants that are not interchangeable
+    kind: value
+    risk: [correctness]
+    input:
+      - description: UTC designator
+        value: "2026-09-04T12:00:00Z"
+      - description: explicit zero offset
+        value: "2026-09-04T12:00:00+00:00"
+      - description: unknown local offset
+        value: "2026-09-04T12:00:00-00:00"
+      - description: space separator (permitted by RFC 3339 NOTE)
+        value: "2026-09-04 12:00:00Z"
+    scenario:
+      given: timestamps in these related but distinct forms
+      when: parsing and comparison run
+      expect:
+        - the parser's treatment of each form is defined; -00:00 (unknown local offset) is not silently treated as an assertion of UTC
+    sources: [RFC-3339]
+    related_rules: []
+    tags: [parsing, iso8601]
+
+  - id: BORING-EDGE-TIME-010
+    title: Sub-second precision mismatch
+    kind: boundary
+    risk: [correctness, data-integrity]
+    input:
+      - description: nanosecond timestamp stored in a milliseconds column
+        value: "2026-09-04T12:00:00.123456789Z → truncated to .123"
+    scenario:
+      given: timestamps crossing systems with different precisions (s/ms/µs/ns)
+      when: they are stored, ordered, and compared
+      expect:
+        - truncation or rounding is explicit and consistent; ordering is stable where the precision difference matters (e.g., event sequencing)
+    sources: [RFC-3339]
+    related_rules: []
+    tags: [precision, ordering]
+
+  - id: BORING-EDGE-TIME-011
+    title: Unix epoch in seconds vs milliseconds
+    kind: value
+    risk: [correctness]
+    input:
+      - description: seconds since epoch
+        value: "1788480000"
+      - description: same instant in milliseconds
+        value: "1788480000000"
+    scenario:
+      given: integer timestamps whose unit is implicit
+      when: they cross API boundaries
+      expect:
+        - the unit is documented per field; heuristic "10 vs 13 digits" guesses do not decide correctness
+    sources: [RFC-3339, RFC-8259]
+    related_rules: []
+    tags: [epoch, interop]
+
+  - id: BORING-EDGE-TIME-012
+    title: Pre-1970 and far-future timestamps
+    kind: boundary
+    risk: [correctness]
+    input:
+      - description: negative epoch (before 1970)
+        value: "-86400"
+      - description: beyond 32-bit time_t
+        value: "2038-01-19T03:14:08Z and later"
+    scenario:
+      given: instants before 1970 or beyond the 32-bit signed limit
+      when: they are stored in signed-32-bit fields or parsed by legacy code
+      expect:
+        - no overflow or sign error; historical dates and long-range expiry timestamps round-trip exactly
+    sources: [RFC-3339]
+    related_rules: []
+    tags: [overflow, history]
+
+  - id: BORING-EDGE-TIME-013
+    title: Leap second (second 60)
+    kind: value
+    risk: [correctness]
+    input:
+      - description: RFC 3339 permits second 60 at leap-second insertions
+        value: "2026-06-30T23:59:60Z"
+    scenario:
+      given: timestamp parsing for values with second = 60
+      when: validation runs
+      expect:
+        - the documented policy applies (RFC 3339's grammar permits it; many systems smear or reject) — parsers do not crash and do not silently misparse
+    sources: [RFC-3339]
+    related_rules: []
+    tags: [leap-second, parsing]
+
+  - id: BORING-EDGE-TIME-014
+    title: Time zone rule changes
+    kind: environment
+    risk: [correctness]
+    scenario:
+      given: a government changes DST rules or offsets for its zone, and the tz database ships an update
+      when: previously stored and future-scheduled times are interpreted
+      expect:
+        - zone rules come from an updatable database (IANA TZDB), not hardcoded offsets; scheduled future events are re-evaluated after tzdata updates
+    sources: [IANA-TZDB]
+    related_rules: []
+    tags: [timezones, maintenance]
+
+  - id: BORING-EDGE-TIME-015
+    title: Clock sources and skewed clocks
+    kind: environment
+    risk: [correctness, security]
+    scenario:
+      given: distributed systems comparing timestamps from different machines
+      when: ordering, token expiry, and audit trails are computed
+      expect:
+        - correctness does not depend on perfectly synchronized clocks; ordering uses logical clocks or server-side timestamps where it matters
+    sources: [RFC-3339]
+    related_rules: []
+    tags: [clocks, distributed-systems]

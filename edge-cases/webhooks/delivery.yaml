@@ -1,0 +1,174 @@
+dataset:
+  id: webhooks-delivery
+  title: Webhook delivery
+  description: >
+    Situations that break webhook consumers: duplication, ordering, delay,
+    partial failure, downtime, concurrency, provider evolution, and replay.
+    Providers differ in specifics; the situations themselves are universal
+    wherever events are delivered over HTTP with retries.
+  updated: "2026-09-04"
+
+cases:
+  - id: BORING-EDGE-WEBHOOK-001
+    title: Duplicate event delivery
+    kind: retry
+    risk: [correctness, data-integrity]
+    scenario:
+      given: a webhook event has already been successfully processed
+      when: the exact event is delivered again
+      expect:
+        - business side effects are not duplicated
+        - the delivery can still be acknowledged appropriately
+    examples:
+      - A duplicate payment event must not create a second order.
+      - A duplicate email event must not send the same transactional email twice.
+    sources: [STRIPE-WEBHOOK-DOCS, GITHUB-WEBHOOK-DOCS]
+    related_rules: [BORING-WEBHOOK-001]
+    tags: [duplicate, retry, idempotency]
+
+  - id: BORING-EDGE-WEBHOOK-002
+    title: Out-of-order delivery
+    kind: sequence
+    risk: [correctness, data-integrity]
+    scenario:
+      given: two events for the same object, where event B describes a later state than event A
+      when: event B is delivered and processed before event A
+      expect:
+        - the object ends in the state described by B, not the state described by A
+        - processing A afterwards does not regress the object
+    examples:
+      - A subscription.updated event (plan change) arrives after the later
+        subscription.deleted; the consumer must not resurrect the subscription.
+    sources: [STRIPE-WEBHOOK-DOCS]
+    related_rules: [BORING-WEBHOOK-006]
+    tags: [ordering, distributed-systems]
+
+  - id: BORING-EDGE-WEBHOOK-003
+    title: Delayed delivery with stale state
+    kind: environment
+    risk: [correctness]
+    scenario:
+      given: an event was generated hours or days before it is delivered, and the entity's state has since changed through another channel
+      when: the late event is processed
+      expect:
+        - the consumer does not act on the stale snapshot in a way that contradicts the entity's current state
+    examples:
+      - A `customer.subscription.updated` event from three days ago arrives after the
+        customer was refunded through the dashboard; the consumer must not treat the
+        subscription as active.
+    sources: [STRIPE-WEBHOOK-DOCS]
+    related_rules: [BORING-WEBHOOK-006, BORING-WEBHOOK-013]
+    tags: [staleness, delay]
+
+  - id: BORING-EDGE-WEBHOOK-004
+    title: Retry after partial processing
+    kind: retry
+    risk: [data-integrity, correctness]
+    scenario:
+      given: a handler completed side effect A (e.g., charging) and failed before side effect B (e.g., shipping)
+      when: the provider retries the delivery
+      expect:
+        - the retry completes B without repeating A
+    sources: [STRIPE-WEBHOOK-DOCS, RFC-9110]
+    related_rules: [BORING-WEBHOOK-001]
+    tags: [partial-failure, retry, idempotency]
+
+  - id: BORING-EDGE-WEBHOOK-005
+    title: Consumer downtime exhausts the retry budget
+    kind: environment
+    risk: [data-integrity, availability]
+    scenario:
+      given: the consumer endpoint is unavailable for longer than the provider's retry window
+      when: the provider stops retrying (or provides no automatic retry at all)
+      expect:
+        - missed deliveries are recoverable — via dead-letter storage, provider replay tooling, or an explicit reconciliation process
+    examples:
+      - Stripe retries for up to three days and then disables the event; GitHub
+        expects you to redeliver missed deliveries yourself after an outage.
+    sources: [STRIPE-WEBHOOK-DOCS, GITHUB-WEBHOOK-DOCS]
+    related_rules: [BORING-WEBHOOK-012, BORING-WEBHOOK-008]
+    tags: [downtime, recovery]
+
+  - id: BORING-EDGE-WEBHOOK-006
+    title: Acknowledged before processing, then crash
+    kind: environment
+    risk: [data-integrity]
+    scenario:
+      given: a consumer responds 2xx immediately and processes asynchronously
+      when: the consumer crashes (or the queue drops the job) after responding but before processing
+      expect:
+        - the event is not lost — it was durably persisted before acknowledgment, or the crash is detected and repaired
+    sources: [STRIPE-WEBHOOK-DOCS, GITHUB-WEBHOOK-DOCS]
+    related_rules: [BORING-WEBHOOK-005]
+    tags: [reliability, ack-semantics]
+
+  - id: BORING-EDGE-WEBHOOK-007
+    title: Concurrent deliveries for the same entity
+    kind: concurrency
+    risk: [correctness, data-integrity]
+    scenario:
+      given: two deliveries affecting the same entity arrive in parallel
+      when: two workers process them simultaneously
+      expect:
+        - both effects are applied or one is safely retried; neither update is silently lost and no effect is duplicated
+    sources: [STRIPE-WEBHOOK-DOCS]
+    related_rules: [BORING-WEBHOOK-011, BORING-WEBHOOK-001]
+    tags: [concurrency, workers]
+
+  - id: BORING-EDGE-WEBHOOK-008
+    title: Unknown event type
+    kind: value
+    risk: [availability, correctness]
+    scenario:
+      given: a syntactically valid delivery whose event type is not in the consumer's catalog
+      when: it arrives (possibly because the provider shipped a new event type)
+      expect:
+        - the consumer acknowledges it without treating it as a processing failure
+        - no business side effects occur
+    sources: [STRIPE-WEBHOOK-DOCS, GITHUB-WEBHOOK-DOCS]
+    related_rules: [BORING-WEBHOOK-007]
+    tags: [forward-compatibility, unknown-input]
+
+  - id: BORING-EDGE-WEBHOOK-009
+    title: Event schema evolution
+    kind: value
+    risk: [availability, correctness]
+    scenario:
+      given: a provider adds a field to an event payload (or changes a field's type in a minor release)
+      when: a strict deserializer or exhaustive schema check processes the delivery
+      expect:
+        - unknown additional fields do not fail processing
+        - type changes in fields the consumer uses are detected and handled safely
+    sources: [STRIPE-WEBHOOK-DOCS, RFC-8259]
+    related_rules: [BORING-WEBHOOK-009]
+    tags: [schema, evolution]
+
+  - id: BORING-EDGE-WEBHOOK-010
+    title: Signature verification during secret rotation
+    kind: state
+    risk: [availability, security]
+    scenario:
+      given: the signing secret has just been rotated and sender and consumer update at different times
+      when: deliveries signed with the previous secret arrive during the overlap window
+      expect:
+        - verification succeeds for both the old and new secret within the documented overlap
+        - no deliveries are dropped because of rotation ordering
+    examples:
+      - Stripe keeps the previous endpoint secret active for up to 24 hours after rolling.
+    sources: [STRIPE-WEBHOOK-DOCS]
+    related_rules: [BORING-WEBHOOK-010]
+    tags: [rotation, secrets]
+
+  - id: BORING-EDGE-WEBHOOK-011
+    title: Replayed delivery with a valid signature
+    kind: retry
+    risk: [security, data-integrity]
+    scenario:
+      given: an attacker captured a previously delivered, correctly signed event
+      when: it is re-sent to the endpoint much later
+      expect:
+        - deliveries older than the signature scheme's tolerance window are rejected
+        - even within the window, deduplication by event/delivery ID prevents reprocessing
+    sources: [STRIPE-WEBHOOK-DOCS]
+    related_rules: [BORING-WEBHOOK-003, BORING-WEBHOOK-001]
+    tags: [replay, security]

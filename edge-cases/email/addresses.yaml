@@ -1,0 +1,272 @@
+dataset:
+  id: email-addresses
+  title: Email addresses
+  description: >
+    Address forms that break signup, login, and communication flows. Email
+    syntax is genuinely odd (RFC 5321/5322), internationalized addresses are a
+    separate protocol capability (RFC 6531), and domain handling has its own
+    rules (RFC 5890, UTS #46). Provider-specific behavior (e.g., Gmail) is
+    labeled as such and must never be encoded as universal email behavior.
+  updated: "2026-09-04"
+
+cases:
+  - id: BORING-EDGE-EMAIL-001
+    title: Plus addressing
+    kind: value
+    risk: [correctness, privacy]
+    input:
+      - description: tagged address
+        value: "user+newsletter@example.com"
+    scenario:
+      given: an address with a plus-tag suffix that delivers to the same mailbox as the untagged address
+      when: signup, login, and deduplication process it
+      expect:
+        - accept/reject and deduplication follow the application's documented policy
+        - one user cannot use plus-tags to bypass per-account limits that are meant to be per-mailbox
+    sources: [RFC-5321]
+    related_rules: [BORING-INPUT-012]
+    tags: [plus-addressing, dedup]
+
+  - id: BORING-EDGE-EMAIL-002
+    title: Dots in the local part (provider-specific aliasing)
+    kind: value
+    risk: [correctness]
+    input:
+      - description: dotted form
+        value: "f.irst.last@gmail.com"
+      - description: undotted form
+        value: "firstlast@gmail.com"
+    scenario:
+      given: two addresses that some providers treat as the same mailbox (Gmail ignores dots) while the standards treat them as distinct
+      when: signup and deduplication process them
+      expect:
+        - behavior follows the application's documented policy; provider-specific aliasing is never assumed universal
+    sources: [RFC-5322]
+    related_rules: [BORING-INPUT-012]
+    tags: [vendor-specific, dedup]
+
+  - id: BORING-EDGE-EMAIL-003
+    title: Local-part case sensitivity
+    kind: value
+    risk: [correctness]
+    input:
+      - description: uppercase
+        value: "USER@example.com"
+      - description: lowercase
+        value: "user@example.com"
+    scenario:
+      given: addresses differing only in local-part case
+      when: comparison and login run
+      expect:
+        - the standard makes local-parts case-sensitive by default (case-insensitive practice is widespread but is a policy, not a syntax rule); the application documents and follows one policy
+    sources: [RFC-5321]
+    related_rules: [BORING-INPUT-010, BORING-INPUT-012]
+    tags: [casing, identity]
+
+  - id: BORING-EDGE-EMAIL-004
+    title: Internationalized domain
+    kind: value
+    risk: [correctness, ux]
+    input:
+      - description: Unicode domain (U-label)
+        value: "user@bücher.example"
+      - description: punycode form (A-label)
+        value: "user@xn--bcher-kva.example"
+    scenario:
+      given: an address whose domain exists in both Unicode and punycode forms
+      when: validation, storage, and sending process it
+      expect:
+        - both forms are handled per the documented IDNA processing (UTS #46); one canonical storage form is chosen; mail can actually be delivered
+    sources: [RFC-5890, UNICODE-UTS46]
+    related_rules: [BORING-INPUT-012]
+    tags: [idn, unicode]
+
+  - id: BORING-EDGE-EMAIL-005
+    title: Unicode local part (EAI/SMTPUTF8)
+    kind: value
+    risk: [correctness, ux]
+    input:
+      - description: internationalized local part
+        value: "用户@example.com"
+    scenario:
+      given: an address with non-ASCII characters in the local part
+      when: validation and mail delivery run
+      expect:
+        - acceptance follows the documented policy; sending such addresses requires end-to-end SMTPUTF8 support, which the application verifies or handles gracefully
+    sources: [RFC-6531]
+    related_rules: [BORING-INPUT-012]
+    tags: [eai, smtputf8]
+
+  - id: BORING-EDGE-EMAIL-006
+    title: Quoted local parts
+    kind: value
+    risk: [correctness]
+    input:
+      - description: quoted string with @ inside
+        value: '"user@internal"@example.com'
+      - description: quoted string with spaces
+        value: '"john smith"@example.com'
+    scenario:
+      given: a syntactically valid address with a quoted local part
+      when: homemade validation and normal form handling process it
+      expect:
+        - the documented policy decides acceptance; homemade regexes that reject valid quoted forms do not silently make policy
+    sources: [RFC-5322]
+    related_rules: [BORING-INPUT-012]
+    tags: [quoted-string, syntax]
+
+  - id: BORING-EDGE-EMAIL-007
+    title: Local part at the 64-octet boundary
+    kind: boundary
+    risk: [correctness, ux]
+    input:
+      - description: 64 characters before the @
+        value: "aaaaaa…a@example.com (local part exactly 64 octets)"
+      - description: 65 characters
+        value: "aaaaaa…a@example.com (local part 65 octets)"
+    scenario:
+      given: addresses at and one over the 64-octet local-part limit
+      when: validation runs
+      expect:
+        - the boundary is enforced consistently with the documented policy (64 octets is the SMTP limit; stricter product limits are allowed but must be deliberate)
+    sources: [RFC-5321]
+    related_rules: [BORING-INPUT-012, BORING-INPUT-004]
+    tags: [length, boundary]
+
+  - id: BORING-EDGE-EMAIL-008
+    title: Domain label and total address length boundaries
+    kind: boundary
+    risk: [correctness]
+    input:
+      - description: 63-octet DNS label (IDN A-labels count against the same limit)
+        value: "user@<63-octet-label>.example"
+      - description: ~254-octet total address
+        value: "<long-local>@<long-domain> (path limit 256 octets)"
+    scenario:
+      given: addresses at the DNS label limit and near the overall path/address limit
+      when: validation and storage process them
+      expect:
+        - limits are enforced with the correct units (octets for DNS/punycode, code points for U-labels) and a documented total-length policy
+    sources: [RFC-5321, RFC-5890]
+    related_rules: [BORING-INPUT-012]
+    tags: [length, dns]
+
+  - id: BORING-EDGE-EMAIL-009
+    title: IP-literal domain
+    kind: value
+    risk: [correctness]
+    input:
+      - description: IPv4 literal
+        value: "user@[192.0.2.1]"
+      - description: IPv6 literal
+        value: "user@[IPv6:2001:db8::1]"
+    scenario:
+      given: an address whose domain is an IP literal
+      when: validation runs
+      expect:
+        - accept/reject follows the documented policy; syntactically valid IP-literal addresses are not rejected by regex accidents
+    sources: [RFC-5321]
+    related_rules: [BORING-INPUT-012]
+    tags: [syntax, ip-literal]
+
+  - id: BORING-EDGE-EMAIL-010
+    title: Single-label domain or no TLD
+    kind: value
+    risk: [correctness]
+    input:
+      - description: internal host
+        value: "user@localhost"
+      - description: bare label (accepted by the HTML email-input validation)
+        value: "user@example"
+    scenario:
+      given: addresses whose domains have no traditional TLD
+      when: validation and delivery run
+      expect:
+        - validation policy is documented (the WHATWG HTML email validation accepts both forms; deliverability is a separate question)
+    sources: [WHATWG-HTML]
+    related_rules: [BORING-INPUT-012]
+    tags: [syntax, intranet]
+
+  - id: BORING-EDGE-EMAIL-011
+    title: Trailing dot in the domain
+    kind: value
+    risk: [correctness]
+    input:
+      - description: fully-qualified with root dot
+        value: "user@example.com."
+    scenario:
+      given: an address whose domain ends with the DNS root dot
+      when: validation, normalization, and delivery run
+      expect:
+        - the documented normalization policy decides equivalence (DNS technically treats the root dot as canonical; mail systems vary)
+    sources: [RFC-5321, RFC-5890]
+    related_rules: [BORING-INPUT-012, BORING-INPUT-001]
+    tags: [dns, normalization]
+
+  - id: BORING-EDGE-EMAIL-012
+    title: Invalid dot placement in the local part
+    kind: value
+    risk: [correctness]
+    input:
+      - description: leading dot
+        value: ".user@example.com"
+      - description: consecutive dots
+        value: "john..doe@example.com"
+      - description: trailing dot
+        value: "user.@example.com"
+    scenario:
+      given: addresses that look almost right but violate dot-atom syntax
+      when: validation runs
+      expect:
+        - they are rejected (or accepted only as a documented, deliberate liberalization) — consistently across signup, login, and admin tooling
+    sources: [RFC-5322]
+    related_rules: [BORING-INPUT-012]
+    tags: [syntax, malformed]
+
+  - id: BORING-EDGE-EMAIL-013
+    title: Line breaks and control characters in address fields
+    kind: value
+    risk: [security, correctness]
+    input:
+      - description: header injection attempt
+        value: "user@example.com\nBcc: victim@example.org"
+    scenario:
+      given: an address field whose value contains CRLF or control characters
+      when: it is validated and used in outbound mail headers
+      expect:
+        - validation rejects them; no attacker-controlled content reaches mail headers or SMTP commands
+    sources: [RFC-5322, OWASP-INPUT-VALIDATION]
+    related_rules: [BORING-INPUT-005, BORING-INPUT-003]
+    tags: [injection, mail-headers]
+
+  - id: BORING-EDGE-EMAIL-014
+    title: Display-name format pasted into an address field
+    kind: value
+    risk: [ux, correctness]
+    input:
+      - description: copied from a mail client
+        value: '"Bob Smith" <bob@example.com>'
+    scenario:
+      given: a full RFC 5322 display-name form pasted into a single address input
+      when: validation runs
+      expect:
+        - the application either parses the address out or rejects with a helpful error — it does not store the decorated string as the address
+    sources: [RFC-5322]
+    related_rules: [BORING-INPUT-012]
+    tags: [parsing, ux]
+
+  - id: BORING-EDGE-EMAIL-015
+    title: Multiple addresses in a single field
+    kind: value
+    risk: [correctness]
+    input:
+      - description: comma-separated
+        value: "a@example.com, b@example.com"
+    scenario:
+      given: two addresses submitted into one single-address field
+      when: validation runs
+      expect:
+        - the documented policy applies (reject, or split deliberately) — a naive "contains @" check does not turn two addresses into a corrupt single value
+    sources: [RFC-5322, WHATWG-HTML]
+    related_rules: [BORING-INPUT-012, BORING-INPUT-004]
+    tags: [input-forms, parsing]

@@ -1,0 +1,89 @@
+dataset:
+  id: auth-sessions-state
+  title: Authentication state — sessions
+  description: >
+    State and boundary situations around session lifecycle: what survives
+    credential and privilege changes, logout semantics, timeout boundaries,
+    and token revocation gaps. Companion to the sessions spec.
+  updated: "2026-09-04"
+
+cases:
+  - id: BORING-EDGE-AUTH-SESSION-001
+    title: Sessions survive a password change
+    kind: state
+    risk: [security]
+    scenario:
+      given: an account has active sessions, including one held by an attacker or a lost device
+      when: the password is changed or reset
+      expect:
+        - pre-change sessions are invalidated (or the user explicitly chose to keep them and that choice is documented)
+    sources: [OWASP-SESSION-MANAGEMENT, OWASP-ASVS]
+    related_rules: [BORING-AUTH-SESSION-007, BORING-AUTH-RESET-009]
+    tags: [containment, password-change]
+
+  - id: BORING-EDGE-AUTH-SESSION-002
+    title: Logout clears the cookie but not the session
+    kind: state
+    risk: [security]
+    scenario:
+      given: a user logs out of a shared or compromised device
+      when: a previously captured copy of the session token is replayed
+      expect:
+        - the server rejects the token because server-side state was destroyed
+    sources: [OWASP-SESSION-MANAGEMENT, OWASP-ASVS]
+    related_rules: [BORING-AUTH-SESSION-003]
+    tags: [logout, stolen-token]
+
+  - id: BORING-EDGE-AUTH-SESSION-003
+    title: Session fixation via a pre-authentication identifier
+    kind: state
+    risk: [security]
+    scenario:
+      given: an attacker can cause a victim's browser to hold a known session identifier (crafted link, shared machine, subdomain cookie)
+      when: the victim logs in
+      expect:
+        - the authenticated session uses a newly generated identifier, so the attacker's known value is useless
+    sources: [OWASP-SESSION-MANAGEMENT]
+    related_rules: [BORING-AUTH-SESSION-002]
+    tags: [fixation]
+
+  - id: BORING-EDGE-AUTH-SESSION-004
+    title: Timeout boundaries never enforced
+    kind: boundary
+    risk: [security]
+    scenario:
+      given: sessions with configured idle and absolute timeouts
+      when: sessions are used after the idle window, after the absolute lifetime, and exactly at the boundary
+      expect:
+        - timeouts are enforced server-side with an unambiguous, consistent boundary
+        - activity that should refresh the idle timer (and activity that should not) follows the documented policy
+    sources: [OWASP-SESSION-MANAGEMENT]
+    related_rules: [BORING-AUTH-SESSION-004]
+    tags: [timeouts, boundary]
+
+  - id: BORING-EDGE-AUTH-SESSION-005
+    title: Stale privilege after a role change
+    kind: authorization
+    risk: [security, correctness]
+    scenario:
+      given: an active session for a user who is subsequently demoted, revoked, or disabled
+      when: the session exercises the old privileges
+      expect:
+        - access is denied within the documented propagation window
+        - the session does not silently retain a cached role until natural expiry
+    sources: [OWASP-SESSION-MANAGEMENT, OWASP-ASVS]
+    related_rules: [BORING-AUTH-SESSION-008]
+    tags: [privilege, revocation]
+
+  - id: BORING-EDGE-AUTH-SESSION-006
+    title: Stolen bearer token valid until natural expiry
+    kind: state
+    risk: [security]
+    scenario:
+      given: a self-contained token (JWT/bearer) used as a session, with no revocation mechanism
+      when: the token is stolen and the user changes their password or logs out
+      expect:
+        - the stolen token is rejected per the documented revocation mechanism (denylist, token versioning, or short lifetime with rotation)
+    sources: [OWASP-SESSION-MANAGEMENT, OWASP-ASVS, RFC-8725]
+    related_rules: [BORING-AUTH-SESSION-012, BORING-AUTH-SESSION-007]
+    tags: [jwt, revocation]

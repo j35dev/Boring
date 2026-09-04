@@ -1,0 +1,231 @@
+dataset:
+  id: numbers-boundaries
+  title: Numeric boundaries
+  description: >
+    Numbers-as-text and numbers-as-floats situations that corrupt amounts,
+    quantities, and identifiers. A full money spec (minor units, rounding,
+    refunds, tax) is deliberately future scope; this dataset seeds the
+    universal numeric boundaries that bite across all applications.
+  updated: "2026-09-04"
+
+cases:
+  - id: BORING-EDGE-NUMBER-001
+    title: Zero as a meaningful value
+    kind: value
+    risk: [correctness, data-integrity]
+    input:
+      - description: zero quantity
+        value: 0
+      - description: zero-amount charge
+        value: "0.00"
+    scenario:
+      given: a zero value where positive numbers are typical
+      when: validation, discounts, charges, and reporting process it
+      expect:
+        - zero is either accepted as a legitimate value or rejected by documented policy — it is never treated as missing and never corrupts "divide by count" logic
+    sources: [RFC-8259]
+    related_rules: []
+    tags: [zero, validation]
+
+  - id: BORING-EDGE-NUMBER-002
+    title: Negative values where positives are expected
+    kind: value
+    risk: [correctness, security]
+    input:
+      - description: negative quantity
+        value: -1
+      - description: negative payment amount
+        value: "-100.00"
+    scenario:
+      given: a negative number submitted into a field whose domain is unsigned
+      when: validation and business logic process it
+      expect:
+        - the domain constraint is enforced explicitly; negative input never produces refunds-by-accident, negative inventory, or bypassed limits
+    sources: [RFC-8259]
+    related_rules: []
+    tags: [validation, negative]
+
+  - id: BORING-EDGE-NUMBER-003
+    title: Integer overflow at language and wire-format limits
+    kind: boundary
+    risk: [correctness, data-integrity]
+    input:
+      - description: 32-bit signed max
+        value: 2147483647
+      - description: one over 32-bit signed max
+        value: 2147483648
+      - description: JavaScript safe-integer max
+        value: 9007199254740991
+    scenario:
+      given: values at and above 2^31-1 and 2^53-1
+      when: they cross language runtimes, databases, and JSON encoders
+      expect:
+        - no silent wrapping, truncation, or precision loss; identifiers that large round-trip exactly
+    sources: [RFC-8259]
+    related_rules: []
+    tags: [overflow, interop]
+
+  - id: BORING-EDGE-NUMBER-004
+    title: Binary floating-point arithmetic on money-like values
+    kind: value
+    risk: [correctness, data-integrity]
+    input:
+      - description: 0.1 + 0.2 in IEEE 754 double
+        value: 0.30000000000000004
+    scenario:
+      given: amounts or rates accumulated in binary floating point
+      when: sums, percentages, and splits are computed and compared
+      expect:
+        - money and exact quantities use a decimal type or minor units; float artifacts never reach stored amounts or equality checks
+    sources: [RFC-8259]
+    related_rules: []
+    tags: [floating-point, money]
+
+  - id: BORING-EDGE-NUMBER-005
+    title: Decimal comma vs decimal point
+    kind: locale
+    risk: [correctness, data-integrity]
+    input:
+      - description: European form for one thousand two hundred thirty-four point five six
+        value: "1.234,56"
+      - description: US form
+        value: "1,234.56"
+    scenario:
+      given: numeric text in locale conventions different from the server's default
+      when: parsing and display run
+      expect:
+        - parsing follows the documented locale policy (CLDR conventions); the same string never means two values in different parts of the system
+    sources: [UNICODE-CLDR]
+    related_rules: [BORING-INPUT-011]
+    tags: [locale, parsing]
+
+  - id: BORING-EDGE-NUMBER-006
+    title: Thousands separators in numeric input
+    kind: value
+    risk: [correctness]
+    input:
+      - description: space-separated grouping
+        value: "1 234 567"
+      - description: comma grouping
+        value: "1,234,567"
+    scenario:
+      given: numeric input containing grouping separators
+      when: validation and parsing run
+      expect:
+        - accept/normalize/reject follows the documented grammar; separators never silently truncate the value at the first separator
+    sources: [UNICODE-CLDR]
+    related_rules: [BORING-INPUT-011]
+    tags: [parsing, locale]
+
+  - id: BORING-EDGE-NUMBER-007
+    title: Leading zeros and explicit signs
+    kind: value
+    risk: [correctness]
+    input:
+      - description: padded ID
+        value: "007"
+      - description: explicit plus
+        value: "+42"
+      - description: negative zero
+        value: "-0"
+    scenario:
+      given: numeric strings with leading zeros, explicit signs, or negative zero
+      when: parsing, storage, and round-tripping occur
+      expect:
+        - identifiers keep their exact text (no octal surprises, no 007→7); numeric semantics for +42/-0 are defined and consistent
+    sources: [RFC-8259]
+    related_rules: [BORING-INPUT-011]
+    tags: [parsing, identifiers]
+
+  - id: BORING-EDGE-NUMBER-008
+    title: Whitespace around numbers
+    kind: value
+    risk: [correctness]
+    input:
+      - description: padded spaces
+        value: " 42 "
+      - description: non-breaking space
+        value: "42 "
+    scenario:
+      given: numeric strings with surrounding whitespace (including Unicode spaces)
+      when: strict and lenient parsers process them
+      expect:
+        - accept/trim/reject is defined; NBSP and other Unicode spaces are covered by the policy, not accidentally fatal
+    sources: [UNICODE-STD, UNICODE-CLDR]
+    related_rules: [BORING-INPUT-011, BORING-INPUT-006]
+    tags: [parsing, whitespace]
+
+  - id: BORING-EDGE-NUMBER-009
+    title: NaN and Infinity reaching numeric fields
+    kind: value
+    risk: [correctness, security]
+    input:
+      - description: NaN is not valid JSON
+        value: "NaN"
+      - description: Infinity is not valid JSON
+        value: "Infinity"
+    scenario:
+      given: non-finite values arriving through JSON or other wire formats
+      when: parsing and validation run
+      expect:
+        - they are rejected at the boundary (RFC 8259 does not permit them as JSON numbers) and never reach arithmetic or storage
+    sources: [RFC-8259]
+    related_rules: [BORING-INPUT-003]
+    tags: [json, validation]
+
+  - id: BORING-EDGE-NUMBER-010
+    title: Currencies with different minor units
+    kind: value
+    risk: [correctness, data-integrity]
+    input:
+      - description: Japanese yen (zero decimal places)
+        value: "¥1,000 = 100000 minor units"
+      - description: Bahraini dinar (three decimal places)
+        value: "BHD 1.000 = 1000 minor units"
+    scenario:
+      given: amounts stored in minor units across currencies with 0, 2, and 3 decimal places
+      when: display, conversion, and rounding occur
+      expect:
+        - minor-unit handling is currency-specific (ISO 4217 exponent), never a global "divide by 100"
+    sources: [UNICODE-CLDR]
+    related_rules: []
+    tags: [money, currency]
+    decision_required: true
+
+  - id: BORING-EDGE-NUMBER-011
+    title: Exponent and alternative numeric notations
+    kind: value
+    risk: [correctness]
+    input:
+      - description: scientific notation
+        value: "1e5"
+      - description: hexadecimal-looking ID
+        value: "0x1A"
+    scenario:
+      given: numeric text in exponent or radix-prefixed notation
+      when: strict parsers and lenient runtimes process it
+      expect:
+        - acceptance is defined per field; runtime leniency (e.g., parseFloat accepting 1e5) does not silently change semantics
+    sources: [RFC-8259]
+    related_rules: [BORING-INPUT-011]
+    tags: [parsing, notation]
+
+  - id: BORING-EDGE-NUMBER-012
+    title: Empty, null, and absent numerics
+    kind: value
+    risk: [correctness, data-integrity]
+    input:
+      - description: empty string
+        value: ""
+      - description: JSON null
+        value: null
+      - description: zero as string
+        value: "0"
+    scenario:
+      given: the several encodings of "no number" alongside a real zero
+      when: APIs and forms submit them
+      expect:
+        - The encodings for empty, null, absent, and 0 are distinguished (or unified) per the documented policy; zero is never conflated with missing
+    sources: [RFC-8259]
+    related_rules: [BORING-INPUT-004]
+    tags: [null-handling, zero]
