@@ -1,4 +1,4 @@
-# boring
+# Boring
 
 **The boring parts of building software, already figured out.**
 
