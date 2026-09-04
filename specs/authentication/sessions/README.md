@@ -49,9 +49,9 @@ rule, report: satisfied / violated / unverifiable, citing rule IDs.
 
 ### BORING-AUTH-SESSION-001 — Session identifiers must be unguessable and carry no meaning (MUST)
 
-At least 64 bits of entropy from a cryptographically secure generator (128+ for
-hand-built identifiers), and nothing else: no username, no role, no timestamp structure.
-A predictable identifier is a login as anyone; a meaningful one leaks data into every
+Use a cryptographically secure generator with enough strength for the application's
+threat model, and nothing else: no username, no role, no timestamp structure. A
+predictable identifier is a login as anyone; a meaningful one leaks data into every
 log line that records it.
 
 ### BORING-AUTH-SESSION-002 — Regenerate the session identifier at authentication and privilege changes (MUST)
@@ -74,10 +74,10 @@ design provides (see rule 012). ASVS makes the same demand (V7 7.4.1).
 
 ### BORING-AUTH-SESSION-004 — Sessions must have enforced idle and absolute timeouts (MUST)
 
-Two clocks, both server-enforced: inactivity timeout (OWASP's ranges: 15–30 minutes
-for lower-risk applications, 2–5 for high-value) and absolute lifetime (4–8 hours as a
-typical range). "Remember me" is a deliberate long-lived-session design — document it
-and compensate with rotation and revocation, not by quietly removing expiry.
+Two clocks, both server-enforced: inactivity and absolute lifetime. Select and document
+the bounds from the application's risk, session purpose, and operational constraints.
+"Remember me" is a deliberate long-lived-session design — document it and compensate
+with rotation and revocation, not by quietly removing expiry.
 
 - **Edge cases:** [EDGE-AUTH-SESSION-004](../../../edge-cases/authentication/sessions-state.yaml)
   (timeout never enforced; boundary at expiry).

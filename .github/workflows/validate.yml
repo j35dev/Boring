@@ -16,3 +16,5 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run validate
+      - run: npm run build:dataset
+      - run: git diff --exit-code -- dist/boring.json

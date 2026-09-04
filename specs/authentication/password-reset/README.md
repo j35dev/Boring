@@ -41,6 +41,21 @@ the applicable acceptance scenarios. Mention any Boring rule you intentionally d
 not support.
 ```
 
+## Quick checklist
+
+In a minute, confirm that the flow has answers for:
+
+- [BORING-AUTH-RESET-001](#boring-auth-reset-001) — indistinguishable responses
+- [BORING-AUTH-RESET-002](#boring-auth-reset-002) — unpredictable credentials
+- [BORING-AUTH-RESET-003](#boring-auth-reset-003) — bounded lifetime
+- [BORING-AUTH-RESET-004](#boring-auth-reset-004) — single-use redemption
+- [BORING-AUTH-RESET-007](#boring-auth-reset-007) — abuse controls without lockout
+- [BORING-AUTH-RESET-009](#boring-auth-reset-009) — existing-session policy
+- [BORING-AUTH-RESET-013](#boring-auth-reset-013) — multiple-request policy
+
+The YAML is the canonical record of every rule's evidence, applicability, failure
+modes, and verification scenarios. This page is the deliberately human-shaped guide.
+
 ## The rules
 
 | ID | Level | Rule |
@@ -51,9 +66,9 @@ not support.
 | [BORING-AUTH-RESET-004](#boring-auth-reset-004) | MUST | Reset tokens must be single-use |
 | [BORING-AUTH-RESET-005](#boring-auth-reset-005) | MUST | The account must not be modified until a valid token is presented |
 | [BORING-AUTH-RESET-006](#boring-auth-reset-006) | MUST | Reset completion must be bound to the token's account |
-| [BORING-AUTH-RESET-007](#boring-auth-reset-007) | MUST | Reset endpoints must be throttled without enabling enumeration |
-| [BORING-AUTH-RESET-008](#boring-auth-reset-008) | MUST | The new password must satisfy the same policy as normal credential creation |
-| [BORING-AUTH-RESET-009](#boring-auth-reset-009) | MUST | Completing a reset must end existing sessions |
+| [BORING-AUTH-RESET-007](#boring-auth-reset-007) | SHOULD | Reset endpoints must be throttled without enabling enumeration |
+| [BORING-AUTH-RESET-008](#boring-auth-reset-008) | SHOULD | The new password must satisfy the same policy as normal credential creation |
+| [BORING-AUTH-RESET-009](#boring-auth-reset-009) | SHOULD | Completing a reset must end existing sessions |
 | [BORING-AUTH-RESET-010](#boring-auth-reset-010) | SHOULD | Notify the account owner when the password changes |
 | [BORING-AUTH-RESET-011](#boring-auth-reset-011) | SHOULD | Reset tokens must be stored as securely as passwords |
 | [BORING-AUTH-RESET-012](#boring-auth-reset-012) | CONSIDER | Treat reset links as secrets during transport |
@@ -77,16 +92,17 @@ applying rate limits only to known accounts is enumeration with extra steps.
 
 ### BORING-AUTH-RESET-002 — Reset tokens must be unguessable (MUST)
 
-Tokens come from a cryptographically secure random generator with at least 64 bits of
-entropy. Not user ID + timestamp, not a hash of known data, not a PRNG seeded per
-request. A guessable token is an account-takeover primitive that needs no email access
-at all.
+Tokens come from a cryptographically secure random generator with enough strength for
+the application's threat model. Not user ID + timestamp, not a hash of known data, not
+a PRNG seeded per request. A guessable token is an account-takeover primitive that
+needs no email access at all.
 
 ### BORING-AUTH-RESET-003 — Reset tokens must expire (MUST)
 
 A reset token is a temporary credential and must be rejected after a bounded lifetime.
-Keep it short — hours, not days; high-risk applications commonly choose an hour or
-less. Critically, expiry is checked at completion time, not at request time.
+Choose and document that lifetime for the recovery channel and threat model; Boring
+does not prescribe one universal number. Critically, expiry is checked at completion
+time, not at request time.
 
 - **Edge cases:** the exact expiry boundary is a classic off-by-one
   ([EDGE-AUTH-RESET-004](../../../edge-cases/authentication/password-reset-state.yaml)).
@@ -119,21 +135,21 @@ token-derived identity.
   ([EDGE-AUTH-RESET-008](../../../edge-cases/authentication/password-reset-state.yaml),
   [EDGE-AUTH-RESET-012](../../../edge-cases/authentication/password-reset-state.yaml)).
 
-### BORING-AUTH-RESET-007 — Reset endpoints must be throttled without enabling enumeration (MUST)
+### BORING-AUTH-RESET-007 — Reset endpoints must be throttled without enabling enumeration (SHOULD)
 
 Throttle reset requests per account and per source — they are an email-bombing vector
 and a token brute-force surface. Two constraints make this subtle: throttling must not
 differentiate known from unknown accounts (see rule 001), and reset floods must never
 lock accounts, or the endpoint becomes a denial-of-service on login.
 
-### BORING-AUTH-RESET-008 — The new password must satisfy the same policy as normal credential creation (MUST)
+### BORING-AUTH-RESET-008 — The new password must satisfy the same policy as normal credential creation (SHOULD)
 
 Reset completion *is* password creation: minimum length, blocklists of common and
 breached passwords, confirmation — the whole policy, not a weakened "emergency" variant.
 Modern guidance (NIST SP 800-63B) is minimum length plus breach checking, and no
 composition rules; whatever your policy is, reset enforces it identically.
 
-### BORING-AUTH-RESET-009 — Completing a reset must end existing sessions (MUST)
+### BORING-AUTH-RESET-009 — Completing a reset must end existing sessions (SHOULD)
 
 Sessions from before the reset may belong to whoever held the old credential. End them
 — automatically, or by offering the user the choice — and do not log in automatically
@@ -186,6 +202,20 @@ allowlist — including protocol-relative URLs that defeat suffix checks.
   — what happens to sessions around credential changes.
 - [Email addresses](../../../edge-cases/email/addresses.yaml) — the addresses reset
   requests arrive with are their own edge-case surface.
+
+## Verification and evidence
+
+Each rule in [spec.yaml](spec.yaml) carries a machine-readable verification block with
+`automatable`, `visibility`, and `given / when / expect` scenarios. Its `evidence`
+entries identify the source, a locator, and whether Boring is reporting direct,
+derived, or contextual support. Start with the linked scenario IDs, then read the
+source registry before treating a product-specific decision as a universal rule.
+
+## Status
+
+This is the reference-quality **golden spec** for the repository. It is still `draft`:
+new specs should generally match its evidence, scope, failure-mode, edge-case, and
+verification structure before they are considered ready for review.
 
 ## Sources
 

@@ -37,11 +37,11 @@ report satisfied / violated / unverifiable, citing rule IDs.
 |---|---|---|
 | [BORING-WEBHOOK-001](#boring-webhook-001) | MUST | Process deliveries idempotently |
 | [BORING-WEBHOOK-002](#boring-webhook-002) | MUST | Verify sender authenticity and fail closed |
-| [BORING-WEBHOOK-003](#boring-webhook-003) | MUST | Enforce replay windows when the scheme embeds a timestamp |
+| [BORING-WEBHOOK-003](#boring-webhook-003) | SHOULD | Enforce replay windows when the scheme embeds a timestamp |
 | [BORING-WEBHOOK-004](#boring-webhook-004) | SHOULD | Acknowledge quickly and process asynchronously |
 | [BORING-WEBHOOK-005](#boring-webhook-005) | MUST | Treat 2xx as the only success signal and never acknowledge before the delivery is durable |
 | [BORING-WEBHOOK-006](#boring-webhook-006) | MUST | Process events order-independently |
-| [BORING-WEBHOOK-007](#boring-webhook-007) | MUST | Acknowledge unknown event types gracefully |
+| [BORING-WEBHOOK-007](#boring-webhook-007) | SHOULD | Acknowledge unknown event types gracefully |
 | [BORING-WEBHOOK-008](#boring-webhook-008) | SHOULD | Persist deliveries before processing |
 | [BORING-WEBHOOK-009](#boring-webhook-009) | MUST | Treat event payloads as untrusted input |
 | [BORING-WEBHOOK-010](#boring-webhook-010) | SHOULD | Support signing-secret rotation without dropped deliveries |
@@ -81,7 +81,7 @@ processing.
   (replayed, correctly signed old event),
   [BORING-EDGE-WEBHOOK-010](../../edge-cases/webhooks/delivery.yaml) (secret rotation).
 
-### BORING-WEBHOOK-003 — Enforce replay windows when the scheme embeds a timestamp (MUST)
+### BORING-WEBHOOK-003 — Enforce replay windows when the scheme embeds a timestamp (SHOULD)
 
 A captured delivery keeps its valid signature forever. Schemes like Stripe's embed a
 timestamp inside the signed payload precisely so the receiver can reject deliveries
@@ -122,7 +122,7 @@ versions, or a re-fetch of the authoritative object.
   (out-of-order), [BORING-EDGE-WEBHOOK-003](../../edge-cases/webhooks/delivery.yaml)
   (hours-late delivery with stale state).
 
-### BORING-WEBHOOK-007 — Acknowledge unknown event types gracefully (MUST)
+### BORING-WEBHOOK-007 — Acknowledge unknown event types gracefully (SHOULD)
 
 Providers add event types over time. If your strict deserializer or exhaustive switch
 fails on unknown types, provider evolution becomes your outage — complete with retries

@@ -1,3 +1,4 @@
+schema_version: 1
 spec:
   id: file-uploads
   title: File Uploads
@@ -19,7 +20,7 @@ spec:
       title: Enforce size limits server-side, including the boundary behavior
       level: MUST
       status: draft
-      summary: >
+      statement: >
         The server must enforce file size limits regardless of what the client
         enforces, must stream or bound memory usage during upload, and must
         define what happens at and above the limit (rejection with clear error,
@@ -35,10 +36,17 @@ spec:
         - A file one byte over the limit is silently truncated and stored corrupt.
         - The request hangs until a platform timeout instead of failing fast.
       sources: [OWASP-FILE-UPLOAD]
+      evidence:
+        - source: OWASP-FILE-UPLOAD
+          locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+          support: direct
+          note: >
+            The cited OWASP-FILE-UPLOAD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-FILE-002, BORING-EDGE-FILE-003]
       related_rules: [BORING-UPLOAD-011]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: the configured maximum upload size
             when: files of exactly the limit, one byte over, and far over are uploaded
@@ -50,7 +58,7 @@ spec:
       title: Determine file type from content, not client claims
       level: MUST
       status: draft
-      summary: >
+      statement: >
         The server must decide what a file is by inspecting its content (magic
         bytes / server-side verification) — never solely by extension or the
         client-supplied Content-Type — and validate against an allowlist of
@@ -61,14 +69,23 @@ spec:
       applies_when:
         - Any file is accepted or stored.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - An HTML/SVG payload accepted because its name ends in .jpg.
         - An executable renamed to .pdf passes validation.
       sources: [OWASP-FILE-UPLOAD]
+      evidence:
+        - source: OWASP-FILE-UPLOAD
+          locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+          support: direct
+          note: >
+            The cited OWASP-FILE-UPLOAD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-FILE-010, BORING-EDGE-FILE-011]
       related_rules: [BORING-UPLOAD-003]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: a file whose content does not match its extension or declared type
             when: it is uploaded
@@ -80,7 +97,7 @@ spec:
       title: Store and serve uploads so they can never execute or render as code
       level: MUST
       status: draft
-      summary: >
+      statement: >
         Uploaded files must be stored outside executable contexts and served in a
         way that neutralizes active content: non-executable storage, safe
         Content-Type, Content-Disposition: attachment, X-Content-Type-Options:
@@ -92,15 +109,24 @@ spec:
       applies_when:
         - Uploaded files are stored or served anywhere.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - An uploaded .svg containing a script is served inline and executes in other users' browsers.
         - Uploads land inside the web root of a server that executes files there.
         - Serving uses the client-declared Content-Type, so text/html uploads render.
       sources: [OWASP-FILE-UPLOAD, MDN-CONTENT-DISPOSITION, MDN-XCONTENTTYPE]
+      evidence:
+        - source: OWASP-FILE-UPLOAD
+          locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+          support: direct
+          note: >
+            The cited OWASP-FILE-UPLOAD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-FILE-012]
       related_rules: [BORING-UPLOAD-002, BORING-UPLOAD-004]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: an upload containing active content (scripted SVG, polyglot)
             when: it is stored and retrieved
@@ -112,7 +138,7 @@ spec:
       title: Never use client-supplied filenames for storage paths
       level: MUST
       status: draft
-      summary: >
+      statement: >
         Storage locations and keys must be generated server-side. Client
         filenames may be kept only as sanitized metadata for display — never
         concatenated into paths, and never trusted for uniqueness.
@@ -122,14 +148,23 @@ spec:
       applies_when:
         - Any uploaded file is stored on disk or object storage.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - A filename like `../../config/entrypoint.sh` escapes the upload directory.
         - Windows-reserved names (CON, NUL) or control characters break downstream systems.
       sources: [OWASP-FILE-UPLOAD]
+      evidence:
+        - source: OWASP-FILE-UPLOAD
+          locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+          support: direct
+          note: >
+            The cited OWASP-FILE-UPLOAD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-FILE-004, BORING-EDGE-FILE-005, BORING-EDGE-FILE-006]
       related_rules: [BORING-UPLOAD-005, BORING-UPLOAD-007]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: uploads whose filenames contain path separators, traversal sequences, reserved device names, and unusual Unicode
             when: they are stored
@@ -139,13 +174,13 @@ spec:
 
     - id: BORING-UPLOAD-005
       title: Define and enforce filename and metadata limits
-      level: MUST
+      level: SHOULD
       status: draft
-      summary: >
-        The application must define limits for filename length, path depth, and
+      statement: >
+        The application should define limits for filename length, path depth, and
         upload metadata (titles, alt text), consistent with its storage and
-        database constraints, and enforce them server-side. The specific
-        numbers are a product decision; having and enforcing them is not.
+        database constraints, and enforce them server-side. The specific numbers
+        are a product decision; having and enforcing them is not.
       why:
         - Filesystems (255-byte name components), object stores, and database columns all have limits that surface as 500s or silent corruption when unhandled.
         - Unicode filenames may expand significantly in storage encodings (UTF-8 bytes, normalization), so limits must be defined in the right unit.
@@ -157,10 +192,17 @@ spec:
         - A 400-character filename passes validation and fails at storage time.
         - Metadata fields accept unlimited text and break rendering or exceed column limits.
       sources: [OWASP-FILE-UPLOAD]
+      evidence:
+        - source: OWASP-FILE-UPLOAD
+          locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+          support: direct
+          note: >
+            The cited OWASP-FILE-UPLOAD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-FILE-005, BORING-EDGE-FILE-006]
       related_rules: [BORING-UPLOAD-004]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: filenames at and above the documented length limit, in ASCII and multi-byte Unicode
             when: they are uploaded
@@ -172,7 +214,7 @@ spec:
       title: Define behavior for zero-byte and empty-content files
       level: CONSIDER
       status: draft
-      summary: >
+      statement: >
         The application should deliberately define whether zero-byte files are
         accepted, and enforce that policy consistently across validation,
         storage, download, and preview paths.
@@ -185,10 +227,17 @@ spec:
         - Upload succeeds; thumbnail/preview generation crashes on the empty file.
         - Validation of "content type by magic bytes" rejects every empty file with an opaque error.
       sources: [OWASP-FILE-UPLOAD]
+      evidence:
+        - source: OWASP-FILE-UPLOAD
+          locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+          support: direct
+          note: >
+            The cited OWASP-FILE-UPLOAD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-FILE-001]
       related_rules: [BORING-UPLOAD-002]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: a zero-byte file with an accepted extension
             when: it is uploaded, stored, downloaded, and previewed
@@ -200,7 +249,7 @@ spec:
       title: Storage keys must be unique; overwrites must be deliberate
       level: MUST
       status: draft
-      summary: >
+      statement: >
         Two uploads must never silently overwrite each other: storage keys must
         be unique per upload (or collision must be handled explicitly), and
         concurrent uploads to the same key must resolve deterministically.
@@ -210,14 +259,23 @@ spec:
       applies_when:
         - Files are stored under user-visible or derived keys.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - Two users uploading `report.pdf` simultaneously; one receives the other's download.
         - A later upload replaces a system asset referenced by stored metadata.
       sources: [OWASP-FILE-UPLOAD]
+      evidence:
+        - source: OWASP-FILE-UPLOAD
+          locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+          support: direct
+          note: >
+            The cited OWASP-FILE-UPLOAD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-FILE-007, BORING-EDGE-FILE-008]
       related_rules: [BORING-UPLOAD-004]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: two concurrent uploads with the same target filename by different users
             when: both complete
@@ -229,7 +287,7 @@ spec:
       title: Enforce authorization on retrieval, not only on upload
       level: MUST
       status: draft
-      summary: >
+      statement: >
         Every retrieval of a stored file must re-check authorization. Unknowable
         URLs (UUIDs) are obfuscation, not access control; private files must not
         be fetchable by guessing or reusing URLs.
@@ -240,14 +298,23 @@ spec:
         - Any stored file has an intended visibility boundary.
       exceptions:
         - Files intentionally public by design must still be deliberately marked as such.
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - Private attachments retrievable by iterating sequential IDs.
         - Signed URLs valid for years, or shared across all tenants.
       sources: [OWASP-FILE-UPLOAD]
+      evidence:
+        - source: OWASP-FILE-UPLOAD
+          locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+          support: direct
+          note: >
+            The cited OWASP-FILE-UPLOAD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-FILE-009]
       related_rules: []
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: a private file belonging to user A
             when: user B requests its URL (guessed, enumerated, or shared)
@@ -257,11 +324,11 @@ spec:
 
     - id: BORING-UPLOAD-009
       title: Bound image decoding before it happens
-      level: MUST
+      level: SHOULD
       status: draft
-      summary: >
+      statement: >
         If uploaded images are decoded or transformed server-side, the decoder
-        must be bounded before decoding: maximum pixel dimensions, maximum
+        should be bounded before decoding: maximum pixel dimensions, maximum
         output allocation, and decoded-size checks that do not trust declared
         dimensions in headers.
       why:
@@ -274,11 +341,23 @@ spec:
       exceptions: []
       failure_modes:
         - A 40KB PNG declaring 100,000×100,000 pixels allocates ~40GB before validation notices.
-      sources: [OWASP-FILE-UPLOAD]
+      sources: [OWASP-FILE-UPLOAD, OWASP-DOS]
+      evidence:
+        - source: OWASP-FILE-UPLOAD
+          locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+          support: derived
+          note: >
+            The upload guidance supports guarding server-side processing, but it does not specify image-pixel limits; the image-specific bound is Boring's derived interpretation.
+        - source: OWASP-DOS
+          locator: "Input validation — Prevent input-based resource allocation"
+          support: direct
+          note: >
+            The cited OWASP-DOS guidance supports bounding input-driven resource allocation; the image-specific limits are Boring's scoped interpretation.
       edge_cases: [BORING-EDGE-FILE-013]
       related_rules: [BORING-UPLOAD-002]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: an image whose header declares dimensions far beyond the documented maximum
             when: it is submitted for processing
@@ -290,7 +369,7 @@ spec:
       title: Bound archive extraction in every dimension
       level: MUST
       status: draft
-      summary: >
+      statement: >
         If archives (zip, tar, and similar) are accepted, extraction must enforce
         maximum total uncompressed size, maximum file count, maximum per-file
         size, and maximum nesting depth, with entry paths sanitized against
@@ -307,10 +386,17 @@ spec:
         - A nested archive exhausts disk or inodes.
         - An entry named `../../../../etc/overwrite-me` writes outside the sandbox.
       sources: [OWASP-FILE-UPLOAD]
+      evidence:
+        - source: OWASP-FILE-UPLOAD
+          locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+          support: direct
+          note: >
+            The cited OWASP-FILE-UPLOAD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-FILE-014]
       related_rules: [BORING-UPLOAD-004]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: an archive whose uncompressed size exceeds the documented limit, and an archive with traversal entry names
             when: extraction runs
@@ -323,7 +409,7 @@ spec:
       title: Interrupted uploads must not leave corrupt or orphaned state
       level: CONSIDER
       status: draft
-      summary: >
+      statement: >
         Uploads interrupted mid-transfer — by the client, the network, or the
         server — should not surface as complete files. Decide how partial data is
         handled (quarantined, discarded, or verified resumption), enforce it
@@ -335,15 +421,24 @@ spec:
       applies_when:
         - Uploads can be interrupted (always) or use chunked/resumable protocols.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       decision_required: true
       failure_modes:
         - A dropped connection leaves a half-written file marked as complete.
         - Resumable assembly concatenates parts in the wrong order or from different sessions.
       sources: [OWASP-FILE-UPLOAD]
+      evidence:
+        - source: OWASP-FILE-UPLOAD
+          locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+          support: direct
+          note: >
+            The cited OWASP-FILE-UPLOAD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-FILE-015]
       related_rules: [BORING-UPLOAD-001]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: an upload interrupted after partial transfer
             when: the file listing and storage are inspected
@@ -356,7 +451,7 @@ spec:
       title: Process untrusted files in constrained contexts
       level: SHOULD
       status: draft
-      summary: >
+      statement: >
         Server-side processing of untrusted files — antivirus scanning, previews,
         transcoding, document conversion — should run in isolated, resource-
         bounded contexts, on the assumption that the file is hostile input to
@@ -373,10 +468,17 @@ spec:
         - Thumbnailing runs in the web worker with full credentials and no memory ceiling.
         - Document conversion executes in the same container as the database.
       sources: [OWASP-FILE-UPLOAD]
+      evidence:
+        - source: OWASP-FILE-UPLOAD
+          locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+          support: direct
+          note: >
+            The cited OWASP-FILE-UPLOAD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: []
       related_rules: [BORING-UPLOAD-009, BORING-UPLOAD-010]
       verification:
-        automatable: manual
+        automatable: false
+        visibility: [source-review, manual]
         scenarios:
           - given: the processing pipeline
             when: its runtime context is reviewed

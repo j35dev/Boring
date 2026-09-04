@@ -2,8 +2,8 @@
 #
 # Every external source referenced by a rule or edge case has exactly one
 # entry here. Tiers classify the *kind* of evidence (see docs/sources.md):
-#   1 standard | 2 authoritative-guidance | 3 vendor-docs
-#   4 corpus   | 5 incident-report         | 6 community
+#   1 standard | 2 authoritative-guidance | 3 official-vendor-documentation
+#   4 oss-corpus | 5 engineering-incident | 6 community-evidence
 # `accessed` records the date the content was last verified by a human.
 # All URLs below were verified live on 2026-09-04 during v0.1 research.
 
@@ -17,6 +17,7 @@
   url: https://www.rfc-editor.org/rfc/rfc9110
   topics: [http, methods, status-codes, idempotency]
   accessed: "2026-09-04"
+  version: "RFC 9110"
   notes: >
     Idempotent methods (§9.2.2) and 2xx success semantics (§15.3) anchor the
     webhook delivery rules.
@@ -250,6 +251,7 @@
   url: https://owasp.org/www-project-application-security-verification-standard/
   topics: [authentication, sessions, security]
   accessed: "2026-09-04"
+  version: "5.0.0"
   notes: >
     Released 30 May 2025. V6 Authentication (credential reset, notifications
     6.3.7/6.3.8/6.4.3), V7 Session Management (timeouts 7.3.1/7.3.2, session
@@ -360,6 +362,18 @@
     Standard test taxonomy; referenced for unvalidated redirect testing and
     general verification approaches.
 
+- id: OWASP-DOS
+  title: OWASP Denial of Service Cheat Sheet
+  organization: OWASP
+  type: authoritative-guidance
+  tier: 2
+  url: https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html
+  topics: [availability, resource-exhaustion, input-validation]
+  accessed: "2026-09-04"
+  notes: >
+    Guidance to analyze application DoS surfaces, limit input-driven resource
+    allocation, and bound expensive processing such as image resizing.
+
 - id: NIST-800-63B
   title: "NIST Special Publication 800-63B (Digital Identity Guidelines: Authentication and Authenticator Management), Revision 4"
   organization: NIST
@@ -368,6 +382,7 @@
   url: https://pages.nist.gov/800-63-4/sp800-63b.html
   topics: [passwords, authentication, policy]
   accessed: "2026-09-04"
+  version: "Revision 4 (2025-07)"
   notes: >
     Final Rev 4 (July 2025) supersedes 800-63B (Rev 3:
     https://pages.nist.gov/800-63-3/sp800-63b.html). Password minimums
@@ -381,7 +396,7 @@
 - id: STRIPE-WEBHOOK-DOCS
   title: Stripe Webhooks documentation
   organization: Stripe
-  type: vendor-docs
+  type: official-vendor-documentation
   tier: 3
   url: https://docs.stripe.com/webhooks
   topics: [webhooks, delivery, signatures]
@@ -397,7 +412,7 @@
 - id: STRIPE-IDEMPOTENCY
   title: Stripe Idempotent Requests documentation
   organization: Stripe
-  type: vendor-docs
+  type: official-vendor-documentation
   tier: 3
   url: https://docs.stripe.com/api/idempotent_requests
   topics: [idempotency, webhooks, api-design]
@@ -410,7 +425,7 @@
 - id: GITHUB-WEBHOOK-DOCS
   title: GitHub — Best practices for using webhooks
   organization: GitHub
-  type: vendor-docs
+  type: official-vendor-documentation
   tier: 3
   url: https://docs.github.com/en/webhooks/using-webhooks/best-practices-for-using-webhooks
   topics: [webhooks, delivery]
@@ -423,7 +438,7 @@
 - id: GITHUB-WEBHOOK-VALIDATION
   title: GitHub — Validating webhook deliveries
   organization: GitHub
-  type: vendor-docs
+  type: official-vendor-documentation
   tier: 3
   url: https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
   topics: [webhooks, signatures]
@@ -434,7 +449,7 @@
 - id: MDN-CONTENT-DISPOSITION
   title: MDN — Content-Disposition header
   organization: Mozilla
-  type: vendor-docs
+  type: official-vendor-documentation
   tier: 3
   url: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
   topics: [file-uploads, serving, http]
@@ -445,7 +460,7 @@
 - id: MDN-XCONTENTTYPE
   title: MDN — X-Content-Type-Options header (nosniff)
   organization: Mozilla
-  type: vendor-docs
+  type: official-vendor-documentation
   tier: 3
   url: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options
   topics: [file-uploads, serving, http]
@@ -458,7 +473,7 @@
 - id: BLNS
   title: Big List of Naughty Strings
   organization: minimaxir (GitHub)
-  type: corpus
+  type: oss-corpus
   tier: 4
   url: https://github.com/minimaxir/big-list-of-naughty-strings
   topics: [text, testing, unicode]
@@ -472,7 +487,7 @@
 - id: WPT
   title: Web Platform Tests
   organization: web-platform-tests contributors (GitHub)
-  type: corpus
+  type: oss-corpus
   tier: 4
   url: https://github.com/web-platform-tests/wpt
   topics: [web-platform, testing]

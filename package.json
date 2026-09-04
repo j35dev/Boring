@@ -7,7 +7,8 @@
   "type": "module",
   "scripts": {
     "validate": "node scripts/validate.mjs",
-    "validate:links": "node scripts/validate.mjs --external-links"
+    "validate:links": "node scripts/validate.mjs --external-links",
+    "build:dataset": "node scripts/export.mjs"
   },
   "devDependencies": {
     "ajv": "^8.17.1",

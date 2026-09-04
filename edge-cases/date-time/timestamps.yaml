@@ -1,3 +1,4 @@
+schema_version: 1
 dataset:
   id: date-time-timestamps
   title: Date & time
@@ -23,6 +24,12 @@ cases:
       expect:
         - the application's policy for non-leap years is defined (Feb 28, Mar 1, or skip) and applied consistently
     sources: [RFC-3339]
+    evidence:
+      - source: RFC-3339
+        locator: "§5.6; §5.7"
+        support: direct
+        note: >
+          The cited RFC-3339 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [calendar, leap-year]
 
@@ -39,6 +46,12 @@ cases:
       expect:
         - the overflow policy is defined (Jan 31 + 1 month = Feb 28, or an error) and consistent across the system
     sources: [UNICODE-CLDR]
+    evidence:
+      - source: UNICODE-CLDR
+        locator: "Numbering Systems and Locale Data"
+        support: direct
+        note: >
+          The cited UNICODE-CLDR material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [calendar, arithmetic]
 
@@ -55,6 +68,12 @@ cases:
       expect:
         - the outcome is defined (shift forward, reject, or map to UTC explicitly) and consistent
     sources: [IANA-TZDB]
+    evidence:
+      - source: IANA-TZDB
+        locator: "Zone rules and maintenance"
+        support: direct
+        note: >
+          The cited IANA-TZDB material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [dst, scheduling]
 
@@ -71,6 +90,12 @@ cases:
       expect:
         - instants are distinguished (stored in UTC with zone rules, not naive local time)
     sources: [IANA-TZDB]
+    evidence:
+      - source: IANA-TZDB
+        locator: "Zone rules and maintenance"
+        support: direct
+        note: >
+          The cited IANA-TZDB material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [dst, ordering]
 
@@ -84,6 +109,12 @@ cases:
       expect:
         - recurrence is computed in the event's zone (09:00 local stays 09:00), not by adding fixed 168-hour intervals in UTC
     sources: [IANA-TZDB]
+    evidence:
+      - source: IANA-TZDB
+        locator: "Zone rules and maintenance"
+        support: direct
+        note: >
+          The cited IANA-TZDB material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [dst, recurrence]
 
@@ -100,6 +131,12 @@ cases:
       expect:
         - the data model distinguishes UTC offset (a number) from time zone (rules that produce offsets); timestamps stored as instants (UTC) are immune
     sources: [IANA-TZDB, RFC-3339]
+    evidence:
+      - source: IANA-TZDB
+        locator: "Zone rules and maintenance"
+        support: direct
+        note: >
+          The cited IANA-TZDB material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [timezones, data-model]
 
@@ -116,6 +153,12 @@ cases:
       expect:
         - the date does not shift to the previous day; date-only semantics are kept separate from instants
     sources: [RFC-3339]
+    evidence:
+      - source: RFC-3339
+        locator: "§5.6; §5.7"
+        support: direct
+        note: >
+          The cited RFC-3339 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [date-only, off-by-one]
 
@@ -132,6 +175,12 @@ cases:
       expect:
         - the boundary convention (inclusive end instant vs exclusive next start) is consistent everywhere; no instant falls into both or neither range
     sources: [RFC-3339]
+    evidence:
+      - source: RFC-3339
+        locator: "§5.6; §5.7"
+        support: direct
+        note: >
+          The cited RFC-3339 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [boundaries, ranges]
 
@@ -154,6 +203,12 @@ cases:
       expect:
         - the parser's treatment of each form is defined; -00:00 (unknown local offset) is not silently treated as an assertion of UTC
     sources: [RFC-3339]
+    evidence:
+      - source: RFC-3339
+        locator: "§5.6; §5.7"
+        support: direct
+        note: >
+          The cited RFC-3339 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [parsing, iso8601]
 
@@ -170,6 +225,12 @@ cases:
       expect:
         - truncation or rounding is explicit and consistent; ordering is stable where the precision difference matters (e.g., event sequencing)
     sources: [RFC-3339]
+    evidence:
+      - source: RFC-3339
+        locator: "§5.6; §5.7"
+        support: direct
+        note: >
+          The cited RFC-3339 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [precision, ordering]
 
@@ -188,6 +249,12 @@ cases:
       expect:
         - the unit is documented per field; heuristic "10 vs 13 digits" guesses do not decide correctness
     sources: [RFC-3339, RFC-8259]
+    evidence:
+      - source: RFC-3339
+        locator: "§5.6; §5.7"
+        support: direct
+        note: >
+          The cited RFC-3339 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [epoch, interop]
 
@@ -206,6 +273,12 @@ cases:
       expect:
         - no overflow or sign error; historical dates and long-range expiry timestamps round-trip exactly
     sources: [RFC-3339]
+    evidence:
+      - source: RFC-3339
+        locator: "§5.6; §5.7"
+        support: direct
+        note: >
+          The cited RFC-3339 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [overflow, history]
 
@@ -222,6 +295,12 @@ cases:
       expect:
         - the documented policy applies (RFC 3339's grammar permits it; many systems smear or reject) — parsers do not crash and do not silently misparse
     sources: [RFC-3339]
+    evidence:
+      - source: RFC-3339
+        locator: "§5.6; §5.7"
+        support: direct
+        note: >
+          The cited RFC-3339 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [leap-second, parsing]
 
@@ -235,6 +314,12 @@ cases:
       expect:
         - zone rules come from an updatable database (IANA TZDB), not hardcoded offsets; scheduled future events are re-evaluated after tzdata updates
     sources: [IANA-TZDB]
+    evidence:
+      - source: IANA-TZDB
+        locator: "Zone rules and maintenance"
+        support: direct
+        note: >
+          The cited IANA-TZDB material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [timezones, maintenance]
 
@@ -248,5 +333,11 @@ cases:
       expect:
         - correctness does not depend on perfectly synchronized clocks; ordering uses logical clocks or server-side timestamps where it matters
     sources: [RFC-3339]
+    evidence:
+      - source: RFC-3339
+        locator: "§5.6; §5.7"
+        support: direct
+        note: >
+          The cited RFC-3339 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [clocks, distributed-systems]

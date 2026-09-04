@@ -1,3 +1,4 @@
+schema_version: 1
 dataset:
   id: numbers-boundaries
   title: Numeric boundaries
@@ -24,6 +25,12 @@ cases:
       expect:
         - zero is either accepted as a legitimate value or rejected by documented policy — it is never treated as missing and never corrupts "divide by count" logic
     sources: [RFC-8259]
+    evidence:
+      - source: RFC-8259
+        locator: "§4 Objects; §6 Numbers"
+        support: direct
+        note: >
+          The cited RFC-8259 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [zero, validation]
 
@@ -42,6 +49,12 @@ cases:
       expect:
         - the domain constraint is enforced explicitly; negative input never produces refunds-by-accident, negative inventory, or bypassed limits
     sources: [RFC-8259]
+    evidence:
+      - source: RFC-8259
+        locator: "§4 Objects; §6 Numbers"
+        support: direct
+        note: >
+          The cited RFC-8259 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [validation, negative]
 
@@ -62,6 +75,12 @@ cases:
       expect:
         - no silent wrapping, truncation, or precision loss; identifiers that large round-trip exactly
     sources: [RFC-8259]
+    evidence:
+      - source: RFC-8259
+        locator: "§4 Objects; §6 Numbers"
+        support: direct
+        note: >
+          The cited RFC-8259 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [overflow, interop]
 
@@ -78,6 +97,12 @@ cases:
       expect:
         - money and exact quantities use a decimal type or minor units; float artifacts never reach stored amounts or equality checks
     sources: [RFC-8259]
+    evidence:
+      - source: RFC-8259
+        locator: "§4 Objects; §6 Numbers"
+        support: direct
+        note: >
+          The cited RFC-8259 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [floating-point, money]
 
@@ -96,6 +121,12 @@ cases:
       expect:
         - parsing follows the documented locale policy (CLDR conventions); the same string never means two values in different parts of the system
     sources: [UNICODE-CLDR]
+    evidence:
+      - source: UNICODE-CLDR
+        locator: "Numbering Systems and Locale Data"
+        support: direct
+        note: >
+          The cited UNICODE-CLDR material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-011]
     tags: [locale, parsing]
 
@@ -114,6 +145,12 @@ cases:
       expect:
         - accept/normalize/reject follows the documented grammar; separators never silently truncate the value at the first separator
     sources: [UNICODE-CLDR]
+    evidence:
+      - source: UNICODE-CLDR
+        locator: "Numbering Systems and Locale Data"
+        support: direct
+        note: >
+          The cited UNICODE-CLDR material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-011]
     tags: [parsing, locale]
 
@@ -134,6 +171,12 @@ cases:
       expect:
         - identifiers keep their exact text (no octal surprises, no 007→7); numeric semantics for +42/-0 are defined and consistent
     sources: [RFC-8259]
+    evidence:
+      - source: RFC-8259
+        locator: "§4 Objects; §6 Numbers"
+        support: direct
+        note: >
+          The cited RFC-8259 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-011]
     tags: [parsing, identifiers]
 
@@ -152,6 +195,12 @@ cases:
       expect:
         - accept/trim/reject is defined; NBSP and other Unicode spaces are covered by the policy, not accidentally fatal
     sources: [UNICODE-STD, UNICODE-CLDR]
+    evidence:
+      - source: UNICODE-STD
+        locator: "Case Mappings and Code Points"
+        support: direct
+        note: >
+          The cited UNICODE-STD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-011, BORING-INPUT-006]
     tags: [parsing, whitespace]
 
@@ -170,6 +219,12 @@ cases:
       expect:
         - they are rejected at the boundary (RFC 8259 does not permit them as JSON numbers) and never reach arithmetic or storage
     sources: [RFC-8259]
+    evidence:
+      - source: RFC-8259
+        locator: "§4 Objects; §6 Numbers"
+        support: direct
+        note: >
+          The cited RFC-8259 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-003]
     tags: [json, validation]
 
@@ -188,6 +243,12 @@ cases:
       expect:
         - minor-unit handling is currency-specific (ISO 4217 exponent), never a global "divide by 100"
     sources: [UNICODE-CLDR]
+    evidence:
+      - source: UNICODE-CLDR
+        locator: "Numbering Systems and Locale Data"
+        support: direct
+        note: >
+          The cited UNICODE-CLDR material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: []
     tags: [money, currency]
     decision_required: true
@@ -207,6 +268,12 @@ cases:
       expect:
         - acceptance is defined per field; runtime leniency (e.g., parseFloat accepting 1e5) does not silently change semantics
     sources: [RFC-8259]
+    evidence:
+      - source: RFC-8259
+        locator: "§4 Objects; §6 Numbers"
+        support: direct
+        note: >
+          The cited RFC-8259 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-011]
     tags: [parsing, notation]
 
@@ -227,5 +294,11 @@ cases:
       expect:
         - The encodings for empty, null, absent, and 0 are distinguished (or unified) per the documented policy; zero is never conflated with missing
     sources: [RFC-8259]
+    evidence:
+      - source: RFC-8259
+        locator: "§4 Objects; §6 Numbers"
+        support: direct
+        note: >
+          The cited RFC-8259 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-004]
     tags: [null-handling, zero]

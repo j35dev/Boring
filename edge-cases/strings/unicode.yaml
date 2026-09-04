@@ -1,3 +1,4 @@
+schema_version: 1
 dataset:
   id: strings-unicode
   title: Strings & Unicode
@@ -26,6 +27,12 @@ cases:
       expect:
         - the application treats them according to its documented normalization policy — the same, consistently
     sources: [UNICODE-UAX15]
+    evidence:
+      - source: UNICODE-UAX15
+        locator: "§1.1 Canonical Equivalence; §1.2 Normalization Forms"
+        support: direct
+        note: >
+          The cited UNICODE-UAX15 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-001]
     tags: [normalization, identity]
 
@@ -44,6 +51,12 @@ cases:
       expect:
         - behavior follows the documented policy (NFKC folding for codes/identifiers is a common choice); display is not corrupted either way
     sources: [UNICODE-UAX15]
+    evidence:
+      - source: UNICODE-UAX15
+        locator: "§1.1 Canonical Equivalence; §1.2 Normalization Forms"
+        support: direct
+        note: >
+          The cited UNICODE-UAX15 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-001]
     tags: [normalization, cjk]
 
@@ -60,6 +73,12 @@ cases:
       expect:
         - the application neither crashes nor miscounts it; display behavior is deliberate (placeholder, rejection, or visible artifact)
     sources: [UNICODE-UAX29]
+    evidence:
+      - source: UNICODE-UAX29
+        locator: "§3 Text Segmentation; GB11"
+        support: direct
+        note: >
+          The cited UNICODE-UAX29 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-005]
     tags: [combining-marks]
 
@@ -76,6 +95,12 @@ cases:
       expect:
         - limits and counting use the documented unit; rendering and downstream systems are not broken by mark stacking
     sources: [UNICODE-UAX29]
+    evidence:
+      - source: UNICODE-UAX29
+        locator: "§3 Text Segmentation; GB11"
+        support: direct
+        note: >
+          The cited UNICODE-UAX29 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-002, BORING-INPUT-005]
     tags: [combining-marks, rendering]
 
@@ -94,6 +119,12 @@ cases:
       expect:
         - the documented invisible-character policy decides; visual comparison alone is never the discriminator
     sources: [UNICODE-TR36, UNICODE-UTS39]
+    evidence:
+      - source: UNICODE-TR36
+        locator: "§2.4 Invisible Characters; §3 Non-Visual Attacks"
+        support: direct
+        note: >
+          The cited UNICODE-TR36 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-007]
     tags: [invisible, spoofing]
 
@@ -110,6 +141,12 @@ cases:
       expect:
         - emoji sequences count as single graphemes; the invisible-character policy for identifiers is applied without breaking legitimate emoji in prose
     sources: [UNICODE-UAX29, UNICODE-UTS39]
+    evidence:
+      - source: UNICODE-UAX29
+        locator: "§3 Text Segmentation; GB11"
+        support: direct
+        note: >
+          The cited UNICODE-UAX29 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-002, BORING-INPUT-007]
     tags: [emoji, zwj]
 
@@ -126,6 +163,12 @@ cases:
       expect:
         - the documented policy handles it (strip as a byte-order artifact, or preserve deliberately); lookups do not silently miss
     sources: [UNICODE-UAX15]
+    evidence:
+      - source: UNICODE-UAX15
+        locator: "§1.1 Canonical Equivalence; §1.2 Normalization Forms"
+        support: direct
+        note: >
+          The cited UNICODE-UAX15 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-007, BORING-INPUT-006]
     tags: [bom, invisible]
 
@@ -145,6 +188,12 @@ cases:
         - legitimate RTL text renders correctly and is never stripped
         - bidi control characters cannot visually reorder surrounding UI or log lines (isolation is applied)
     sources: [UNICODE-UAX9, UNICODE-TR36]
+    evidence:
+      - source: UNICODE-UAX9
+        locator: "Bidirectional Algorithm — Isolates"
+        support: direct
+        note: >
+          The cited UNICODE-UAX9 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-009]
     tags: [bidi, rtl, spoofing]
 
@@ -163,6 +212,12 @@ cases:
       expect:
         - the application detects confusability (UTS #39 skeleton comparison) and applies its documented allow/block policy
     sources: [UNICODE-UTS39]
+    evidence:
+      - source: UNICODE-UTS39
+        locator: "§4 Confusables; §5.1 Restriction-Level Checking"
+        support: direct
+        note: >
+          The cited UNICODE-UTS39 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-008]
     tags: [spoofing, phishing]
 
@@ -181,6 +236,12 @@ cases:
       expect:
         - mixed-script detection (UTS #39 resolved script sets) informs the documented policy
     sources: [UNICODE-UTS39]
+    evidence:
+      - source: UNICODE-UTS39
+        locator: "§4 Confusables; §5.1 Restriction-Level Checking"
+        support: direct
+        note: >
+          The cited UNICODE-UTS39 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-008]
     tags: [mixed-script, spoofing]
 
@@ -199,6 +260,12 @@ cases:
       expect:
         - counting and truncation use the documented unit; no grapheme is split into replacement characters
     sources: [UNICODE-UAX29]
+    evidence:
+      - source: UNICODE-UAX29
+        locator: "§3 Text Segmentation; GB11"
+        support: direct
+        note: >
+          The cited UNICODE-UAX29 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-002, BORING-INPUT-004]
     tags: [graphemes, emoji, length]
 
@@ -217,6 +284,12 @@ cases:
       expect:
         - comparison results are locale-independent (case folding per the documented policy), not an accident of runtime locale
     sources: [UNICODE-STD]
+    evidence:
+      - source: UNICODE-STD
+        locator: "Case Mappings and Code Points"
+        support: direct
+        note: >
+          The cited UNICODE-STD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-010]
     tags: [casing, locale]
 
@@ -233,6 +306,12 @@ cases:
       expect:
         - the sequence is treated as one user-perceived character per the documented unit policy
     sources: [UNICODE-UAX29]
+    evidence:
+      - source: UNICODE-UAX29
+        locator: "§3 Text Segmentation; GB11"
+        support: direct
+        note: >
+          The cited UNICODE-UAX29 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-002]
     tags: [emoji, graphemes]
 
@@ -251,6 +330,12 @@ cases:
       expect:
         - the whitespace policy covers Unicode spaces explicitly; they are not silently treated as ordinary ASCII space (or are, deliberately)
     sources: [UNICODE-STD]
+    evidence:
+      - source: UNICODE-STD
+        locator: "Case Mappings and Code Points"
+        support: direct
+        note: >
+          The cited UNICODE-STD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-006]
     tags: [whitespace, paste]
 
@@ -271,6 +356,12 @@ cases:
       expect:
         - whitespace-only values are handled per the documented policy (rejected for required fields, or accepted deliberately) — never stored as real content by accident
     sources: [UNICODE-STD]
+    evidence:
+      - source: UNICODE-STD
+        locator: "Case Mappings and Code Points"
+        support: direct
+        note: >
+          The cited UNICODE-STD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-006, BORING-INPUT-004]
     tags: [whitespace, validation]
 
@@ -289,6 +380,12 @@ cases:
       expect:
         - validation sees the fully decoded form; the decoded value cannot survive to storage or execution unvalidated
     sources: [OWASP-INPUT-VALIDATION]
+    evidence:
+      - source: OWASP-INPUT-VALIDATION
+        locator: "Input Validation Rules"
+        support: direct
+        note: >
+          The cited OWASP-INPUT-VALIDATION material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-003]
     tags: [encoding, validation]
 
@@ -309,6 +406,12 @@ cases:
       expect:
         - the documented control-character policy applies; downstream logs, terminals, and C-based consumers are not corrupted or injected
     sources: [UNICODE-TR36, OWASP-INPUT-VALIDATION]
+    evidence:
+      - source: UNICODE-TR36
+        locator: "§2.4 Invisible Characters; §3 Non-Visual Attacks"
+        support: direct
+        note: >
+          The cited UNICODE-TR36 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-005]
     tags: [control-characters, injection]
 
@@ -325,6 +428,12 @@ cases:
       expect:
         - no encoder crash or storage corruption; the documented policy replaces, rejects, or strips deterministically
     sources: [UNICODE-STD]
+    evidence:
+      - source: UNICODE-STD
+        locator: "Case Mappings and Code Points"
+        support: direct
+        note: >
+          The cited UNICODE-STD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-005, BORING-INPUT-003]
     tags: [encoding, surrogates]
 
@@ -343,6 +452,12 @@ cases:
       expect:
         - at-limit input works end to end; over-limit input is rejected consistently; nothing hangs or degrades service
     sources: [OWASP-INPUT-VALIDATION]
+    evidence:
+      - source: OWASP-INPUT-VALIDATION
+        locator: "Input Validation Rules"
+        support: direct
+        note: >
+          The cited OWASP-INPUT-VALIDATION material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-004, BORING-INPUT-002]
     tags: [length, dos]
 
@@ -363,5 +478,11 @@ cases:
       expect:
         - the application distinguishes (or unifies) them per the documented policy, consistently across every entry point
     sources: [RFC-8259]
+    evidence:
+      - source: RFC-8259
+        locator: "§4 Objects; §6 Numbers"
+        support: direct
+        note: >
+          The cited RFC-8259 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-004, BORING-INPUT-006]
     tags: [null-handling, api]

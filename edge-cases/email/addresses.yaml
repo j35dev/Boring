@@ -1,3 +1,4 @@
+schema_version: 1
 dataset:
   id: email-addresses
   title: Email addresses
@@ -24,6 +25,12 @@ cases:
         - accept/reject and deduplication follow the application's documented policy
         - one user cannot use plus-tags to bypass per-account limits that are meant to be per-mailbox
     sources: [RFC-5321]
+    evidence:
+      - source: RFC-5321
+        locator: "§4.5.3.1; §2.4"
+        support: direct
+        note: >
+          The cited RFC-5321 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-012]
     tags: [plus-addressing, dedup]
 
@@ -42,6 +49,12 @@ cases:
       expect:
         - behavior follows the application's documented policy; provider-specific aliasing is never assumed universal
     sources: [RFC-5322]
+    evidence:
+      - source: RFC-5322
+        locator: "§3.2.3; §3.4.1"
+        support: direct
+        note: >
+          The cited RFC-5322 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-012]
     tags: [vendor-specific, dedup]
 
@@ -60,6 +73,12 @@ cases:
       expect:
         - the standard makes local-parts case-sensitive by default (case-insensitive practice is widespread but is a policy, not a syntax rule); the application documents and follows one policy
     sources: [RFC-5321]
+    evidence:
+      - source: RFC-5321
+        locator: "§4.5.3.1; §2.4"
+        support: direct
+        note: >
+          The cited RFC-5321 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-010, BORING-INPUT-012]
     tags: [casing, identity]
 
@@ -78,6 +97,12 @@ cases:
       expect:
         - both forms are handled per the documented IDNA processing (UTS #46); one canonical storage form is chosen; mail can actually be delivered
     sources: [RFC-5890, UNICODE-UTS46]
+    evidence:
+      - source: RFC-5890
+        locator: "§2.3.1; §2.3.2.1"
+        support: direct
+        note: >
+          The cited RFC-5890 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-012]
     tags: [idn, unicode]
 
@@ -94,6 +119,12 @@ cases:
       expect:
         - acceptance follows the documented policy; sending such addresses requires end-to-end SMTPUTF8 support, which the application verifies or handles gracefully
     sources: [RFC-6531]
+    evidence:
+      - source: RFC-6531
+        locator: "§3.2 SMTPUTF8"
+        support: direct
+        note: >
+          The cited RFC-6531 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-012]
     tags: [eai, smtputf8]
 
@@ -112,6 +143,12 @@ cases:
       expect:
         - the documented policy decides acceptance; homemade regexes that reject valid quoted forms do not silently make policy
     sources: [RFC-5322]
+    evidence:
+      - source: RFC-5322
+        locator: "§3.2.3; §3.4.1"
+        support: direct
+        note: >
+          The cited RFC-5322 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-012]
     tags: [quoted-string, syntax]
 
@@ -130,6 +167,12 @@ cases:
       expect:
         - the boundary is enforced consistently with the documented policy (64 octets is the SMTP limit; stricter product limits are allowed but must be deliberate)
     sources: [RFC-5321]
+    evidence:
+      - source: RFC-5321
+        locator: "§4.5.3.1; §2.4"
+        support: direct
+        note: >
+          The cited RFC-5321 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-012, BORING-INPUT-004]
     tags: [length, boundary]
 
@@ -148,6 +191,12 @@ cases:
       expect:
         - limits are enforced with the correct units (octets for DNS/punycode, code points for U-labels) and a documented total-length policy
     sources: [RFC-5321, RFC-5890]
+    evidence:
+      - source: RFC-5321
+        locator: "§4.5.3.1; §2.4"
+        support: direct
+        note: >
+          The cited RFC-5321 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-012]
     tags: [length, dns]
 
@@ -166,6 +215,12 @@ cases:
       expect:
         - accept/reject follows the documented policy; syntactically valid IP-literal addresses are not rejected by regex accidents
     sources: [RFC-5321]
+    evidence:
+      - source: RFC-5321
+        locator: "§4.5.3.1; §2.4"
+        support: direct
+        note: >
+          The cited RFC-5321 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-012]
     tags: [syntax, ip-literal]
 
@@ -184,6 +239,12 @@ cases:
       expect:
         - validation policy is documented (the WHATWG HTML email validation accepts both forms; deliverability is a separate question)
     sources: [WHATWG-HTML]
+    evidence:
+      - source: WHATWG-HTML
+        locator: "§4.10.5.1.5 Email state"
+        support: direct
+        note: >
+          The cited WHATWG-HTML material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-012]
     tags: [syntax, intranet]
 
@@ -200,6 +261,12 @@ cases:
       expect:
         - the documented normalization policy decides equivalence (DNS technically treats the root dot as canonical; mail systems vary)
     sources: [RFC-5321, RFC-5890]
+    evidence:
+      - source: RFC-5321
+        locator: "§4.5.3.1; §2.4"
+        support: direct
+        note: >
+          The cited RFC-5321 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-012, BORING-INPUT-001]
     tags: [dns, normalization]
 
@@ -220,6 +287,12 @@ cases:
       expect:
         - they are rejected (or accepted only as a documented, deliberate liberalization) — consistently across signup, login, and admin tooling
     sources: [RFC-5322]
+    evidence:
+      - source: RFC-5322
+        locator: "§3.2.3; §3.4.1"
+        support: direct
+        note: >
+          The cited RFC-5322 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-012]
     tags: [syntax, malformed]
 
@@ -236,6 +309,12 @@ cases:
       expect:
         - validation rejects them; no attacker-controlled content reaches mail headers or SMTP commands
     sources: [RFC-5322, OWASP-INPUT-VALIDATION]
+    evidence:
+      - source: RFC-5322
+        locator: "§3.2.3; §3.4.1"
+        support: direct
+        note: >
+          The cited RFC-5322 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-005, BORING-INPUT-003]
     tags: [injection, mail-headers]
 
@@ -252,6 +331,12 @@ cases:
       expect:
         - the application either parses the address out or rejects with a helpful error — it does not store the decorated string as the address
     sources: [RFC-5322]
+    evidence:
+      - source: RFC-5322
+        locator: "§3.2.3; §3.4.1"
+        support: direct
+        note: >
+          The cited RFC-5322 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-012]
     tags: [parsing, ux]
 
@@ -268,5 +353,11 @@ cases:
       expect:
         - the documented policy applies (reject, or split deliberately) — a naive "contains @" check does not turn two addresses into a corrupt single value
     sources: [RFC-5322, WHATWG-HTML]
+    evidence:
+      - source: RFC-5322
+        locator: "§3.2.3; §3.4.1"
+        support: direct
+        note: >
+          The cited RFC-5322 material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-INPUT-012, BORING-INPUT-004]
     tags: [input-forms, parsing]

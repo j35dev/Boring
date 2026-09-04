@@ -1,3 +1,4 @@
+schema_version: 1
 spec:
   id: input-validation
   title: Input, Text & Unicode
@@ -19,7 +20,7 @@ spec:
       title: Define and apply a Unicode normalization policy
       level: MUST
       status: draft
-      summary: >
+      statement: >
         The application must define which Unicode normalization form (typically
         NFC) it uses, apply it consistently before comparison, uniqueness, and
         storage decisions, and never assume that input is already normalized.
@@ -34,10 +35,17 @@ spec:
         - A user registers "José", then "José" (decomposed) registers again as a "different" user.
         - Search and lookup miss canonically equivalent matches.
       sources: [UNICODE-UAX15]
+      evidence:
+        - source: UNICODE-UAX15
+          locator: "§1.1 Canonical Equivalence; §1.2 Normalization Forms"
+          support: direct
+          note: >
+            The cited UNICODE-UAX15 section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-TEXT-001, BORING-EDGE-TEXT-002]
       related_rules: [BORING-INPUT-003]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: a canonically equivalent pair of strings (NFC and NFD encodings of the same name)
             when: both are submitted to a uniqueness-sensitive flow (registration, duplicate check)
@@ -49,7 +57,7 @@ spec:
       title: Know the difference between bytes, code points, and grapheme clusters
       level: MUST
       status: draft
-      summary: >
+      statement: >
         Length limits, truncation, and "character" counting must be defined in a
         deliberate unit — bytes, Unicode code points, or user-perceived
         characters (grapheme clusters) — and truncation must never split a
@@ -61,14 +69,23 @@ spec:
       applies_when:
         - Text is length-limited, truncated, counted, or paginated.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - Truncating to 30 code points slices a flag emoji or a family emoji into replacement characters.
         - A limit defined in bytes rejects short CJK/emoji input that users perceive as well under the limit.
       sources: [UNICODE-UAX29, UNICODE-STD, NIST-800-63B]
+      evidence:
+        - source: UNICODE-UAX29
+          locator: "§3 Text Segmentation; GB11"
+          support: direct
+          note: >
+            The cited UNICODE-UAX29 section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-TEXT-011, BORING-EDGE-TEXT-013, BORING-EDGE-TEXT-019]
       related_rules: [BORING-INPUT-004]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: a string of maximum allowed length built entirely from multi-code-point graphemes
             when: it is truncated by one unit and length-checked
@@ -80,7 +97,7 @@ spec:
       title: Validate the decoded and canonical form, at the trust boundary
       level: MUST
       status: draft
-      summary: >
+      statement: >
         Input must be validated after all decodings and normalizations it will
         undergo (URL decoding, HTML unescaping, Unicode normalization, JSON
         parsing) — and validation must happen when untrusted data enters the
@@ -91,14 +108,23 @@ spec:
       applies_when:
         - Any untrusted input enters the application through any protocol.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - Validation rejects `<script>` but accepts its URL-encoded or double-encoded form.
         - JSON parsing maps an invalid escape into a different string than the one validated.
       sources: [OWASP-INPUT-VALIDATION, OWASP-FILE-UPLOAD]
+      evidence:
+        - source: OWASP-INPUT-VALIDATION
+          locator: "Input Validation Rules"
+          support: direct
+          note: >
+            The cited OWASP-INPUT-VALIDATION section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-TEXT-016, BORING-EDGE-TEXT-018]
       related_rules: [BORING-INPUT-001]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: a payload whose dangerous form appears only after decoding or normalization
             when: it passes through the full input pipeline
@@ -110,7 +136,7 @@ spec:
       title: Define per-field length limits in the right unit
       level: MUST
       status: draft
-      summary: >
+      statement: >
         Every text field must have a defined maximum length — chosen deliberately
         per field, documented, and enforced consistently on input and storage —
         in a unit that matches its purpose (see BORING-INPUT-002).
@@ -124,10 +150,17 @@ spec:
         - A 50,000-character "name" is accepted, then breaks rendering, exports, and downstream APIs.
         - Client and server enforce different limits, so valid-looking input fails late.
       sources: [OWASP-INPUT-VALIDATION]
+      evidence:
+        - source: OWASP-INPUT-VALIDATION
+          locator: "Input Validation Rules"
+          support: direct
+          note: >
+            The cited OWASP-INPUT-VALIDATION section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-TEXT-019, BORING-EDGE-TEXT-020]
       related_rules: [BORING-INPUT-002]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: each text field's documented limit
             when: input at the limit and one unit over is submitted
@@ -139,7 +172,7 @@ spec:
       title: Define a policy for control characters and invalid encodings
       level: MUST
       status: draft
-      summary: >
+      statement: >
         The application must define how it handles control characters (other
         than expected whitespace/newlines) and text that is not validly encoded
         (invalid UTF-8, unpaired surrogates): reject, replace, or strip —
@@ -150,14 +183,23 @@ spec:
       applies_when:
         - Text is accepted from clients or external systems.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - An unpaired surrogate (legal in some JSON/JS paths) crashes a UTF-8 encoder or persists as mojibake.
         - A NUL byte truncates a C-string downstream; an ESC sequence injects into terminal logs.
       sources: [OWASP-INPUT-VALIDATION, UNICODE-TR36]
+      evidence:
+        - source: OWASP-INPUT-VALIDATION
+          locator: "Input Validation Rules"
+          support: direct
+          note: >
+            The cited OWASP-INPUT-VALIDATION section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-TEXT-017, BORING-EDGE-TEXT-018]
       related_rules: [BORING-INPUT-003]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: input containing control characters and invalidly-encoded sequences
             when: it passes validation, storage, and display
@@ -169,7 +211,7 @@ spec:
       title: Define a whitespace policy per field
       level: CONSIDER
       status: draft
-      summary: >
+      statement: >
         Each text field should have a deliberately defined whitespace policy —
         trim leading and trailing, preserve internal, and how to treat non-ASCII
         whitespace (NBSP, zero-width space) — applied consistently, including
@@ -184,10 +226,17 @@ spec:
         - Duplicated accounts from `" bob"` vs `"bob"`.
         - Whitespace-only bios and comments stored as content.
       sources: [UNICODE-STD]
+      evidence:
+        - source: UNICODE-STD
+          locator: "Case Mappings and Code Points"
+          support: direct
+          note: >
+            The cited UNICODE-STD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-TEXT-014, BORING-EDGE-TEXT-015]
       related_rules: [BORING-INPUT-004]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: inputs that differ only in leading/trailing/non-ASCII whitespace
             when: they are submitted to uniqueness-sensitive flows
@@ -199,7 +248,7 @@ spec:
       title: Define a policy for zero-width and invisible characters
       level: MUST
       status: draft
-      summary: >
+      statement: >
         The application must define how zero-width and otherwise invisible
         characters (zero-width space, zero-width joiner, soft hyphen, BOM
         mid-text) are handled in identifiers and display text: strip, preserve,
@@ -214,10 +263,17 @@ spec:
         - A coupon code pasted with a trailing zero-width space fails lookup.
         - An "admin" username with an embedded zero-width character creates a look-alike that eyeballs cannot distinguish.
       sources: [UNICODE-TR36, UNICODE-UTS39]
+      evidence:
+        - source: UNICODE-TR36
+          locator: "§2.4 Invisible Characters; §3 Non-Visual Attacks"
+          support: direct
+          note: >
+            The cited UNICODE-TR36 section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-TEXT-005, BORING-EDGE-TEXT-006, BORING-EDGE-TEXT-007]
       related_rules: [BORING-INPUT-008]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: two identifiers that are visually identical but differ by invisible characters
             when: both are submitted to identifier-creation or lookup
@@ -229,7 +285,7 @@ spec:
       title: Guard public identifiers against mixed-script and confusable spoofing
       level: SHOULD
       status: draft
-      summary: >
+      statement: >
         User-visible identifiers (usernames, handles, team names) should be
         checked for mixed-script content and visual confusability, using
         Unicode's security mechanisms, so that look-alike identities can be
@@ -245,10 +301,17 @@ spec:
       failure_modes:
         - A support scammer registers `paypa1-support` or a Cyrillic look-alike of a staff handle.
       sources: [UNICODE-UTS39, UNICODE-TR36]
+      evidence:
+        - source: UNICODE-UTS39
+          locator: "§4 Confusables; §5.1 Restriction-Level Checking"
+          support: direct
+          note: >
+            The cited UNICODE-UTS39 section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-TEXT-009, BORING-EDGE-TEXT-010]
       related_rules: [BORING-INPUT-007]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: a proposed identifier whose skeleton matches an existing one, or whose scripts are mixed
             when: registration or rename is attempted
@@ -260,7 +323,7 @@ spec:
       title: Preserve bidirectional text and render it isolated
       level: MUST
       status: draft
-      summary: >
+      statement: >
         Right-to-left and bidirectional text must be stored intact (not stripped
         or reordered) and rendered within directional isolates, so mixed-
         direction content displays correctly and cannot visually reorder
@@ -271,14 +334,23 @@ spec:
       applies_when:
         - User text is stored and displayed in any language.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - An RTL name displays with its parts visually reversed in a Latin UI.
         - A username containing bidi control characters reorders a "user X says:" line to attribute text to someone else.
       sources: [UNICODE-UAX9, UNICODE-TR36]
+      evidence:
+        - source: UNICODE-UAX9
+          locator: "Bidirectional Algorithm — Isolates"
+          support: direct
+          note: >
+            The cited UNICODE-UAX9 section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-TEXT-008]
       related_rules: [BORING-INPUT-005]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: user text containing RTL runs and bidi control characters
             when: it is stored and rendered
@@ -290,7 +362,7 @@ spec:
       title: Case-insensitive comparison must use case folding, not naive casing
       level: SHOULD
       status: draft
-      summary: >
+      statement: >
         When text is compared case-insensitively (emails, usernames, search),
         comparison should use Unicode case folding; locale-sensitive casing
         (notably Turkish I) must be applied only where locale is known and the
@@ -301,13 +373,22 @@ spec:
       applies_when:
         - Text is compared, deduplicated, or searched case-insensitively.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - An email address containing `İ` (Turkish capital I with dot) normalizes differently under different locale settings, creating duplicate accounts or failed lookups.
       sources: [UNICODE-STD]
+      evidence:
+        - source: UNICODE-STD
+          locator: "Case Mappings and Code Points"
+          support: direct
+          note: >
+            The cited UNICODE-STD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-TEXT-012]
       related_rules: [BORING-INPUT-001]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: strings that differ only by Turkish-I-class characters
             when: case-insensitive comparison runs
@@ -319,7 +400,7 @@ spec:
       title: Parse numbers, dates, and structured values with explicit grammars
       level: SHOULD
       status: draft
-      summary: >
+      statement: >
         Numeric and temporal text should be parsed with explicit, tested
         grammars — deciding leading zeros, plus signs, whitespace, locale
         separators, exponent notation — rather than loose or homemade patterns;
@@ -330,14 +411,23 @@ spec:
       applies_when:
         - Numbers, dates, or structured values arrive as text.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - An amount of `"1.234"` parsed as 1234 in one locale and 1.234 in another.
         - A leading-zero ID silently parsed as octal or as a different number.
       sources: [UNICODE-CLDR]
+      evidence:
+        - source: UNICODE-CLDR
+          locator: "Numbering Systems and Locale Data"
+          support: direct
+          note: >
+            The cited UNICODE-CLDR section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-NUMBER-005, BORING-EDGE-NUMBER-007, BORING-EDGE-NUMBER-011]
       related_rules: []
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: numeric strings in every documented form (padded, signed, exponent, locale separators)
             when: they are parsed
@@ -349,7 +439,7 @@ spec:
       title: Use maintained parsers for structured identifiers
       level: SHOULD
       status: draft
-      summary: >
+      statement: >
         Email addresses, URLs, and similar structured identifiers should be
         parsed and validated with maintained implementations of their
         specifications — not with homemade regexes; where specifications
@@ -360,14 +450,23 @@ spec:
       applies_when:
         - Email addresses, URLs, handles, or similar identifiers are accepted.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - A "simple email regex" rejects quoted local parts, IDN domains, or addresses on single-label hosts — while accepting malformed input.
         - URL validation misses scheme-relative (`//evil.example`) or embedded-credential forms.
       sources: [RFC-5321, RFC-5322, RFC-6531, RFC-5890, WHATWG-HTML, WHATWG-URL, UNICODE-UTS46]
+      evidence:
+        - source: RFC-5321
+          locator: "§4.5.3.1; §2.4"
+          support: direct
+          note: >
+            The cited RFC-5321 section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-EMAIL-001, BORING-EDGE-EMAIL-004, BORING-EDGE-EMAIL-006, BORING-EDGE-EMAIL-009]
       related_rules: [BORING-INPUT-010]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: the application's address validation
             when: exercised with valid-but-unusual and invalid-but-plausible addresses from the email edge-case dataset

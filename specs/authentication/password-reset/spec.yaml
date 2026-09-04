@@ -1,3 +1,4 @@
+schema_version: 1
 spec:
   id: password-reset
   title: Password Reset
@@ -20,7 +21,7 @@ spec:
       title: Reset flows must not reveal whether an account exists
       level: MUST
       status: draft
-      summary: >
+      statement: >
         The externally observable result of requesting a password reset — message,
         status code, and response timing — must be equivalent whether or not the
         supplied account exists.
@@ -37,10 +38,17 @@ spec:
         - Response-time differences (hashing/verification runs only for existing accounts).
         - Rate limiting applied only to known accounts, revealing them through throttling.
       sources: [OWASP-FORGOT-PASSWORD, OWASP-AUTHENTICATION, OWASP-ASVS]
+      evidence:
+        - source: OWASP-FORGOT-PASSWORD
+          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          support: direct
+          note: >
+            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-AUTH-RESET-006, BORING-EDGE-AUTH-RESET-007, BORING-EDGE-AUTH-RESET-010]
       related_rules: [BORING-AUTH-RESET-007]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: an existing account and a non-existent account
             when: a password reset is requested for each
@@ -56,56 +64,72 @@ spec:
       title: Reset tokens must be unguessable
       level: MUST
       status: draft
-      summary: >
+      statement: >
         Reset tokens must be generated with a cryptographically secure random
-        generator and be sufficiently long to resist brute force — at least 64 bits
-        of entropy.
+        generator and be sufficiently long to resist guessing under the application's
+        threat model.
       why:
         - A guessable token converts the reset flow into an account takeover primitive.
-        - OWASP requires tokens to be randomly generated using a cryptographically safe algorithm and long enough to protect against brute-force attacks.
+        - OWASP requires tokens to be randomly generated using a cryptographically safe algorithm and long enough to protect against brute-force attacks; it does not set one universal entropy threshold here.
         - Sequential, timestamp-based, or hashed-known-data tokens are predictable in practice.
       applies_when:
         - Any reset token, code, or link capability is issued.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - Tokens derived from user ID plus a timestamp or MAC.
         - Short numeric codes reused from other flows without adjusted entropy.
         - Tokens generated with non-cryptographic randomness (Math.random-style PRNGs).
       sources: [OWASP-FORGOT-PASSWORD]
+      evidence:
+        - source: OWASP-FORGOT-PASSWORD
+          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          support: direct
+          note: >
+            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: []
       related_rules: [BORING-AUTH-RESET-003, BORING-AUTH-RESET-011]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: many reset tokens issued for many accounts
             when: the token corpus is examined
             expect:
               - tokens show no structure, sequence, or cross-account predictability
-              - generation traces to a CSPRNG with at least 64 bits of entropy
+              - generation traces to a CSPRNG and the chosen strength is justified by the application's threat model
       tags: [cryptography, tokens, takeover]
 
     - id: BORING-AUTH-RESET-003
       title: Reset tokens must expire
       level: MUST
       status: draft
-      summary: >
-        Reset tokens must have a bounded lifetime and be rejected afterwards.
-        Lifetimes should be short — hours, not days — with one hour or less a
-        common choice for high-risk applications.
+      statement: >
+        Reset tokens must have a bounded lifetime and be rejected after that lifetime.
       why:
         - A reset token is a temporary credential; an unbounded one is a permanent backdoor, especially once it leaks (email forwarding, logs, device sync).
-        - OWASP requires tokens to expire after an appropriate period; the concrete bound is a risk decision, which is why the strict number is SHOULD-level guidance.
+        - OWASP requires tokens to expire after an appropriate period; the appropriate bound depends on the recovery channel and threat model.
       applies_when:
         - Any reset token or code is issued.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - Tokens valid indefinitely or for weeks.
         - Expiry checked at request time rather than at completion time.
       sources: [OWASP-FORGOT-PASSWORD]
+      evidence:
+        - source: OWASP-FORGOT-PASSWORD
+          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          support: direct
+          note: >
+            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-AUTH-RESET-004]
       related_rules: [BORING-AUTH-RESET-002]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: a reset token issued more than the configured lifetime ago
             when: it is submitted to the completion endpoint
@@ -117,7 +141,7 @@ spec:
       title: Reset tokens must be single-use
       level: MUST
       status: draft
-      summary: >
+      statement: >
         A reset token must be invalidated by its successful use. Submitting the
         same token again must be rejected, including when submissions race.
       why:
@@ -126,14 +150,23 @@ spec:
       applies_when:
         - Any reset token or code is issued.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - The token remains valid after completion (replay weeks later).
         - Two concurrent completions with the same token both succeed.
       sources: [OWASP-FORGOT-PASSWORD]
+      evidence:
+        - source: OWASP-FORGOT-PASSWORD
+          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          support: direct
+          note: >
+            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-AUTH-RESET-001, BORING-EDGE-AUTH-RESET-005]
       related_rules: [BORING-AUTH-RESET-006]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: a reset token that has already completed a password change
             when: the same token is submitted again
@@ -149,7 +182,7 @@ spec:
       title: The account must not be modified until a valid token is presented
       level: MUST
       status: draft
-      summary: >
+      statement: >
         Validation happens at completion: the token must be verified — existence,
         expiry, use state, account binding — at the moment the credential changes,
         and the account must not be modified before that.
@@ -159,14 +192,23 @@ spec:
       applies_when:
         - Reset completion changes credentials or account state.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - The request step flips a "reset approved" flag that the completion step trusts without validating the token again.
         - Expiry or use state checked only on the first request, not on the mutating call.
       sources: [OWASP-FORGOT-PASSWORD]
+      evidence:
+        - source: OWASP-FORGOT-PASSWORD
+          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          support: direct
+          note: >
+            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-AUTH-RESET-003, BORING-EDGE-AUTH-RESET-009]
       related_rules: [BORING-AUTH-RESET-003, BORING-AUTH-RESET-004]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: an account with a reset request in flight whose token has since expired or been used
             when: the completion endpoint is called with that token
@@ -178,7 +220,7 @@ spec:
       title: Reset completion must be bound to the token's account
       level: MUST
       status: draft
-      summary: >
+      statement: >
         The password changed is the one belonging to the account the token was
         issued for. Client-supplied identifiers (user ID, email in the form) must
         not be able to redirect the change to a different account.
@@ -188,14 +230,23 @@ spec:
       applies_when:
         - Reset completion accepts any client-supplied identifier alongside the token.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - The completion form includes an email/user field that overrides token-derived identity.
         - Token lookup keys on a client-supplied email, so one valid token resets whichever account that email names.
       sources: [OWASP-FORGOT-PASSWORD]
+      evidence:
+        - source: OWASP-FORGOT-PASSWORD
+          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          support: direct
+          note: >
+            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-AUTH-RESET-008, BORING-EDGE-AUTH-RESET-012]
       related_rules: [BORING-AUTH-RESET-004]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: a valid reset token for account A
             when: the completion request claims account B (different email or user ID)
@@ -205,28 +256,37 @@ spec:
 
     - id: BORING-AUTH-RESET-007
       title: Reset endpoints must be throttled without enabling enumeration
-      level: MUST
+      level: SHOULD
       status: draft
-      summary: >
-        Reset request and completion endpoints must be rate-limited — per account
-        and per source — while keeping responses indistinguishable between known
-        and unknown accounts, and without locking accounts because of
-        reset-request floods.
+      statement: >
+        Reset request and completion endpoints should use abuse controls such as
+        rate limiting, per-account and per-source where appropriate, while keeping
+        responses indistinguishable between known and unknown accounts and avoiding
+        account lockout from reset-request floods.
       why:
         - Without throttling, the endpoint becomes an email-bombing tool and a token brute-force surface.
         - OWASP recommends per-account rate limiting and other controls, and explicitly warns that accounts should not be locked out in response to a forgotten-password attack.
-        - NIST requires verifiers to limit failed authentication attempts (rate limiting is SHALL-level guidance for authentication).
+        - NIST requires rate limiting for specified authentication events; that supports the control but does not prescribe one universal reset-endpoint algorithm.
       applies_when:
         - Reset request or completion is reachable by unauthenticated users.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - Throttling applied only for existing accounts, leaking account existence (conflicts with BORING-AUTH-RESET-001).
         - Reset floods lock accounts, producing a denial-of-service on login.
       sources: [OWASP-FORGOT-PASSWORD, NIST-800-63B]
+      evidence:
+        - source: OWASP-FORGOT-PASSWORD
+          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          support: direct
+          note: >
+            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-AUTH-RESET-010]
       related_rules: [BORING-AUTH-RESET-001]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: many reset requests from one source, for a mix of existing and non-existing accounts
             when: the responses are compared
@@ -237,13 +297,12 @@ spec:
 
     - id: BORING-AUTH-RESET-008
       title: The new password must satisfy the same policy as normal credential creation
-      level: MUST
+      level: SHOULD
       status: draft
-      summary: >
-        Completing a reset must enforce the application's full password policy —
-        minimum length, blocklists of common and breached passwords — exactly as
-        registration or password change does, and require the password to be
-        confirmed.
+      statement: >
+        Completing a reset should enforce the same password policy as normal
+        credential creation, including the application's documented length and
+        compromised-password rules.
       why:
         - Reset completion is password creation; weakening the policy there reopens the weakest door.
         - OWASP requires the same password policy used elsewhere in the application to apply on reset.
@@ -251,14 +310,23 @@ spec:
       applies_when:
         - Reset completion sets a new password.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - Reset accepts a one-character password that registration would reject.
         - Breached-password checks skipped because "the user proved identity via email".
       sources: [OWASP-FORGOT-PASSWORD, NIST-800-63B, OWASP-AUTHENTICATION]
+      evidence:
+        - source: OWASP-FORGOT-PASSWORD
+          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          support: direct
+          note: >
+            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: []
       related_rules: [BORING-AUTH-RESET-009]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: the application's password policy
             when: a reset completes with a password that violates it
@@ -268,12 +336,12 @@ spec:
 
     - id: BORING-AUTH-RESET-009
       title: Completing a reset must end existing sessions
-      level: MUST
+      level: SHOULD
       status: draft
-      summary: >
-        After a password reset completes, previously established sessions must be
-        invalidated — automatically, or by offering the user the choice — and the
-        flow must not log the user in automatically.
+      statement: >
+        After a password reset completes, previously established sessions should be
+        invalidated automatically or by an explicit user choice. The flow should not
+        silently log the user in as a side effect of recovery.
       why:
         - Sessions established before the reset may belong to whoever had the old credential; keeping them alive defeats the point of the reset.
         - OWASP requires offering the user invalidation of all existing sessions (or invalidating automatically), and not logging the user in automatically after reset.
@@ -281,14 +349,23 @@ spec:
       applies_when:
         - The application has cookie- or token-based sessions.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - The attacker's session survives the victim's reset.
         - Reset auto-logs-in the person holding the token — different person than the account owner when a link was intercepted.
       sources: [OWASP-FORGOT-PASSWORD, OWASP-ASVS]
+      evidence:
+        - source: OWASP-FORGOT-PASSWORD
+          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          support: direct
+          note: >
+            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-AUTH-SESSION-001]
       related_rules: [BORING-AUTH-SESSION-007]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: an account with an active session and a completed password reset
             when: the old session is used after the reset
@@ -300,7 +377,7 @@ spec:
       title: Notify the account owner when the password changes
       level: SHOULD
       status: draft
-      summary: >
+      statement: >
         A notification that the password was changed should be sent to the
         account's address of record — without including the new password, the
         token, or a working reset link.
@@ -311,14 +388,23 @@ spec:
       applies_when:
         - Reset completion changes a credential.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - The confirmation email contains a "click here to set a new password" link with a fresh token — a second takeover key.
         - The email includes the new password in plaintext.
       sources: [OWASP-FORGOT-PASSWORD, OWASP-ASVS]
+      evidence:
+        - source: OWASP-FORGOT-PASSWORD
+          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          support: direct
+          note: >
+            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: []
       related_rules: [BORING-AUTH-RESET-012]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: a completed password reset
             when: notifications are inspected
@@ -331,7 +417,7 @@ spec:
       title: Reset tokens must be stored as securely as passwords
       level: SHOULD
       status: draft
-      summary: >
+      statement: >
         Reset tokens at rest should be protected like credentials — hashed (with a
         password-hashing function) or stored in an equivalently secured secret
         store — and each token must be linked to exactly one account.
@@ -342,14 +428,23 @@ spec:
         - Reset tokens are persisted.
       exceptions:
         - Systems storing tokens in dedicated secret infrastructure with equivalent protection.
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - Plaintext token columns in the users table.
         - Tokens stored in logs, analytics events, or cache dumps.
       sources: [OWASP-FORGOT-PASSWORD, OWASP-PASSWORD-STORAGE]
+      evidence:
+        - source: OWASP-FORGOT-PASSWORD
+          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          support: direct
+          note: >
+            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: []
       related_rules: [BORING-AUTH-RESET-002]
       verification:
-        automatable: manual
+        automatable: false
+        visibility: [source-review, manual]
         scenarios:
           - given: the token persistence layer
             when: its contents are inspected
@@ -361,7 +456,7 @@ spec:
       title: Treat reset links as secrets during transport
       level: CONSIDER
       status: draft
-      summary: >
+      statement: >
         Deliberately decide how the token reaches the user and minimize its
         exposure: links pasted into emails leak through browser history, server
         and proxy logs, Referer headers, link previews, and analytics — design so
@@ -377,10 +472,17 @@ spec:
         - Email link previews and mail-client scanners consuming the single-use token before the user clicks.
         - Third-party assets on the reset page receiving the token via Referer.
       sources: [OWASP-SESSION-MANAGEMENT]
+      evidence:
+        - source: OWASP-SESSION-MANAGEMENT
+          locator: "Session ID Properties; Cookies; Session ID Life Cycle; Session Expiration"
+          support: direct
+          note: >
+            The cited OWASP-SESSION-MANAGEMENT section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-AUTH-RESET-011]
       related_rules: [BORING-AUTH-RESET-010]
       verification:
-        automatable: manual
+        automatable: false
+        visibility: [source-review, manual]
         scenarios:
           - given: a completed reset flow
             when: logs, analytics events, and outbound requests from the reset page are inspected
@@ -392,7 +494,7 @@ spec:
       title: Define the policy for multiple outstanding reset requests
       level: CONSIDER
       status: draft
-      summary: >
+      statement: >
         Decide and document what happens when a reset is requested while another
         token is outstanding: strong default is newest-wins (issuing a new token
         invalidates previous ones), but the essential requirement is that the
@@ -407,10 +509,17 @@ spec:
         - Every request mints an independently valid token; ten requests leave ten working keys.
         - Only the newest token works, but older ones remain in the database long past their usefulness.
       sources: [OWASP-FORGOT-PASSWORD]
+      evidence:
+        - source: OWASP-FORGOT-PASSWORD
+          locator: "Forgot Password Request; User Resets Password; General Security Practices"
+          support: direct
+          note: >
+            The cited OWASP-FORGOT-PASSWORD section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: [BORING-EDGE-AUTH-RESET-002]
       related_rules: [BORING-AUTH-RESET-004]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: two reset requests issued in sequence for the same account
             when: each token is submitted after the second request
@@ -422,7 +531,7 @@ spec:
       title: Post-reset redirects must not be attacker-controlled
       level: SHOULD
       status: draft
-      summary: >
+      statement: >
         The redirect target after a completed reset should be fixed or validated
         against an allowlist — a client-supplied redirect parameter must not be
         able to send the user to an external site.
@@ -432,14 +541,23 @@ spec:
       applies_when:
         - The reset flow redirects after completion or request.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - A ?next=https://evil.example parameter carries the freshly-reset, now-logged-out user to a phishing page.
         - Protocol-relative URLs (`//evil.example`) bypass a host-suffix check.
       sources: [OWASP-WSTG]
+      evidence:
+        - source: OWASP-WSTG
+          locator: "Testing for Unvalidated Redirects and Forwards"
+          support: direct
+          note: >
+            The cited OWASP-WSTG section directly supports this behavior; Boring narrows it to the applicability conditions recorded above.
       edge_cases: []
       related_rules: []
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: a completion request carrying a redirect parameter pointing off-site
             when: the reset completes

@@ -37,11 +37,11 @@ Boring rule, report: satisfied / violated / unverifiable, citing rule IDs.
 | [BORING-UPLOAD-002](#boring-upload-002) | MUST | Determine file type from content, not client claims |
 | [BORING-UPLOAD-003](#boring-upload-003) | MUST | Store and serve uploads so they can never execute or render as code |
 | [BORING-UPLOAD-004](#boring-upload-004) | MUST | Never use client-supplied filenames for storage paths |
-| [BORING-UPLOAD-005](#boring-upload-005) | MUST | Define and enforce filename and metadata limits |
+| [BORING-UPLOAD-005](#boring-upload-005) | SHOULD | Define and enforce filename and metadata limits |
 | [BORING-UPLOAD-006](#boring-upload-006) | CONSIDER | Define behavior for zero-byte and empty-content files |
 | [BORING-UPLOAD-007](#boring-upload-007) | MUST | Storage keys must be unique; overwrites must be deliberate |
 | [BORING-UPLOAD-008](#boring-upload-008) | MUST | Enforce authorization on retrieval, not only on upload |
-| [BORING-UPLOAD-009](#boring-upload-009) | MUST | Bound image decoding before it happens |
+| [BORING-UPLOAD-009](#boring-upload-009) | SHOULD | Bound image decoding before it happens |
 | [BORING-UPLOAD-010](#boring-upload-010) | MUST | Bound archive extraction in every dimension |
 | [BORING-UPLOAD-011](#boring-upload-011) | CONSIDER | Interrupted uploads must not leave corrupt or orphaned state |
 | [BORING-UPLOAD-012](#boring-upload-012) | SHOULD | Process untrusted files in constrained contexts |
@@ -91,7 +91,7 @@ and keep the original name only as sanitized, display-only metadata.
   ([EDGE-FILE-004](../../edge-cases/files/uploads.yaml)), [reserved names](../../edge-cases/files/uploads.yaml)
   ([EDGE-FILE-006](../../edge-cases/files/uploads.yaml)).
 
-### BORING-UPLOAD-005 — Define and enforce filename and metadata limits (MUST)
+### BORING-UPLOAD-005 — Define and enforce filename and metadata limits (SHOULD)
 
 Filesystem components end at 255 bytes, database columns end earlier, and Unicode
 expands unpredictably between them. Define limits — in the right unit (bytes vs
@@ -130,7 +130,7 @@ obfuscation, not access control.
 - **Edge cases:** [unauthorized retrieval](../../edge-cases/files/uploads.yaml)
   ([EDGE-FILE-009](../../edge-cases/files/uploads.yaml)).
 
-### BORING-UPLOAD-009 — Bound image decoding before it happens (MUST)
+### BORING-UPLOAD-009 — Bound image decoding before it happens (SHOULD)
 
 A 40KB PNG can declare a 100,000×100,000 bitmap, and some decoders will happily
 allocate ~40GB before your validation runs. Check real dimensions and bound allocation

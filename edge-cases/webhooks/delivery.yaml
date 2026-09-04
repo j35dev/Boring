@@ -1,3 +1,4 @@
+schema_version: 1
 dataset:
   id: webhooks-delivery
   title: Webhook delivery
@@ -23,6 +24,12 @@ cases:
       - A duplicate payment event must not create a second order.
       - A duplicate email event must not send the same transactional email twice.
     sources: [STRIPE-WEBHOOK-DOCS, GITHUB-WEBHOOK-DOCS]
+    evidence:
+      - source: STRIPE-WEBHOOK-DOCS
+        locator: "Duplicates; Event ordering; Retries; Signatures"
+        support: contextual
+        note: >
+          The cited STRIPE-WEBHOOK-DOCS documentation demonstrates this provider behavior or failure mode; it is contextual evidence, not a universal provider contract.
     related_rules: [BORING-WEBHOOK-001]
     tags: [duplicate, retry, idempotency]
 
@@ -40,6 +47,12 @@ cases:
       - A subscription.updated event (plan change) arrives after the later
         subscription.deleted; the consumer must not resurrect the subscription.
     sources: [STRIPE-WEBHOOK-DOCS]
+    evidence:
+      - source: STRIPE-WEBHOOK-DOCS
+        locator: "Duplicates; Event ordering; Retries; Signatures"
+        support: contextual
+        note: >
+          The cited STRIPE-WEBHOOK-DOCS documentation demonstrates this provider behavior or failure mode; it is contextual evidence, not a universal provider contract.
     related_rules: [BORING-WEBHOOK-006]
     tags: [ordering, distributed-systems]
 
@@ -57,6 +70,12 @@ cases:
         customer was refunded through the dashboard; the consumer must not treat the
         subscription as active.
     sources: [STRIPE-WEBHOOK-DOCS]
+    evidence:
+      - source: STRIPE-WEBHOOK-DOCS
+        locator: "Duplicates; Event ordering; Retries; Signatures"
+        support: contextual
+        note: >
+          The cited STRIPE-WEBHOOK-DOCS documentation demonstrates this provider behavior or failure mode; it is contextual evidence, not a universal provider contract.
     related_rules: [BORING-WEBHOOK-006, BORING-WEBHOOK-013]
     tags: [staleness, delay]
 
@@ -70,6 +89,12 @@ cases:
       expect:
         - the retry completes B without repeating A
     sources: [STRIPE-WEBHOOK-DOCS, RFC-9110]
+    evidence:
+      - source: STRIPE-WEBHOOK-DOCS
+        locator: "Duplicates; Event ordering; Retries; Signatures"
+        support: contextual
+        note: >
+          The cited STRIPE-WEBHOOK-DOCS documentation demonstrates this provider behavior or failure mode; it is contextual evidence, not a universal provider contract.
     related_rules: [BORING-WEBHOOK-001]
     tags: [partial-failure, retry, idempotency]
 
@@ -86,6 +111,12 @@ cases:
       - Stripe retries for up to three days and then disables the event; GitHub
         expects you to redeliver missed deliveries yourself after an outage.
     sources: [STRIPE-WEBHOOK-DOCS, GITHUB-WEBHOOK-DOCS]
+    evidence:
+      - source: STRIPE-WEBHOOK-DOCS
+        locator: "Duplicates; Event ordering; Retries; Signatures"
+        support: contextual
+        note: >
+          The cited STRIPE-WEBHOOK-DOCS documentation demonstrates this provider behavior or failure mode; it is contextual evidence, not a universal provider contract.
     related_rules: [BORING-WEBHOOK-012, BORING-WEBHOOK-008]
     tags: [downtime, recovery]
 
@@ -99,6 +130,12 @@ cases:
       expect:
         - the event is not lost — it was durably persisted before acknowledgment, or the crash is detected and repaired
     sources: [STRIPE-WEBHOOK-DOCS, GITHUB-WEBHOOK-DOCS]
+    evidence:
+      - source: STRIPE-WEBHOOK-DOCS
+        locator: "Duplicates; Event ordering; Retries; Signatures"
+        support: contextual
+        note: >
+          The cited STRIPE-WEBHOOK-DOCS documentation demonstrates this provider behavior or failure mode; it is contextual evidence, not a universal provider contract.
     related_rules: [BORING-WEBHOOK-005]
     tags: [reliability, ack-semantics]
 
@@ -112,6 +149,12 @@ cases:
       expect:
         - both effects are applied or one is safely retried; neither update is silently lost and no effect is duplicated
     sources: [STRIPE-WEBHOOK-DOCS]
+    evidence:
+      - source: STRIPE-WEBHOOK-DOCS
+        locator: "Duplicates; Event ordering; Retries; Signatures"
+        support: contextual
+        note: >
+          The cited STRIPE-WEBHOOK-DOCS documentation demonstrates this provider behavior or failure mode; it is contextual evidence, not a universal provider contract.
     related_rules: [BORING-WEBHOOK-011, BORING-WEBHOOK-001]
     tags: [concurrency, workers]
 
@@ -126,6 +169,12 @@ cases:
         - the consumer acknowledges it without treating it as a processing failure
         - no business side effects occur
     sources: [STRIPE-WEBHOOK-DOCS, GITHUB-WEBHOOK-DOCS]
+    evidence:
+      - source: STRIPE-WEBHOOK-DOCS
+        locator: "Duplicates; Event ordering; Retries; Signatures"
+        support: contextual
+        note: >
+          The cited STRIPE-WEBHOOK-DOCS documentation demonstrates this provider behavior or failure mode; it is contextual evidence, not a universal provider contract.
     related_rules: [BORING-WEBHOOK-007]
     tags: [forward-compatibility, unknown-input]
 
@@ -140,6 +189,12 @@ cases:
         - unknown additional fields do not fail processing
         - type changes in fields the consumer uses are detected and handled safely
     sources: [STRIPE-WEBHOOK-DOCS, RFC-8259]
+    evidence:
+      - source: STRIPE-WEBHOOK-DOCS
+        locator: "Duplicates; Event ordering; Retries; Signatures"
+        support: contextual
+        note: >
+          The cited STRIPE-WEBHOOK-DOCS documentation demonstrates this provider behavior or failure mode; it is contextual evidence, not a universal provider contract.
     related_rules: [BORING-WEBHOOK-009]
     tags: [schema, evolution]
 
@@ -156,6 +211,12 @@ cases:
     examples:
       - Stripe keeps the previous endpoint secret active for up to 24 hours after rolling.
     sources: [STRIPE-WEBHOOK-DOCS]
+    evidence:
+      - source: STRIPE-WEBHOOK-DOCS
+        locator: "Duplicates; Event ordering; Retries; Signatures"
+        support: contextual
+        note: >
+          The cited STRIPE-WEBHOOK-DOCS documentation demonstrates this provider behavior or failure mode; it is contextual evidence, not a universal provider contract.
     related_rules: [BORING-WEBHOOK-010]
     tags: [rotation, secrets]
 
@@ -170,5 +231,34 @@ cases:
         - deliveries older than the signature scheme's tolerance window are rejected
         - even within the window, deduplication by event/delivery ID prevents reprocessing
     sources: [STRIPE-WEBHOOK-DOCS]
+    evidence:
+      - source: STRIPE-WEBHOOK-DOCS
+        locator: "Duplicates; Event ordering; Retries; Signatures"
+        support: contextual
+        note: >
+          The cited STRIPE-WEBHOOK-DOCS documentation demonstrates this provider behavior or failure mode; it is contextual evidence, not a universal provider contract.
     related_rules: [BORING-WEBHOOK-003, BORING-WEBHOOK-001]
     tags: [replay, security]
+
+  - id: BORING-EDGE-WEBHOOK-012
+    title: Payload versus current-state handling is implicit
+    kind: state
+    risk: [correctness, data-integrity]
+    scenario:
+      given: an event payload describes an object whose provider-side state may have changed
+      when: the consumer implements a handler without documenting whether it trusts the payload or fetches current state
+      expect:
+        - the handler's choice is explicit for that event type
+        - tests cover stale-payload behavior when the choice depends on current state
+    decision_required: true
+    examples:
+      - A cancellation event arrives after a later plan change; the consumer must know whether the event snapshot or current provider state wins.
+    sources: [STRIPE-WEBHOOK-DOCS]
+    evidence:
+      - source: STRIPE-WEBHOOK-DOCS
+        locator: "Event ordering; Fetch the latest object"
+        support: contextual
+        note: >
+          Stripe documents that event ordering is not guaranteed; the explicit trust-versus-fetch decision is Boring's product-neutral interpretation.
+    related_rules: [BORING-WEBHOOK-006, BORING-WEBHOOK-013]
+    tags: [state, stale-data, decision-required]

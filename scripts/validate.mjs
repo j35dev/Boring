@@ -22,6 +22,7 @@ const warnings = [];
 const err = (m) => errors.push(m);
 const warn = (m) => warnings.push(m);
 const rel = (p) => relative(root, p).split('\\').join('/');
+const evidenceSupports = new Set(['direct', 'derived', 'contextual']);
 
 function isValidDate(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -76,6 +77,38 @@ function validateSchema(instance, schemaFile, label) {
     return false;
   }
   return true;
+}
+
+function validateEvidence(entries, label, listedSources, kind) {
+  if (!Array.isArray(entries) || entries.length === 0) {
+    err(`${label}: ${kind} has no evidence entries`);
+    return;
+  }
+  const seen = new Set();
+  for (const evidence of entries) {
+    if (!evidence || typeof evidence !== 'object') continue;
+    if (seen.has(evidence.source)) err(`${label}: duplicate evidence source ${evidence.source}`);
+    seen.add(evidence.source);
+    if (!listedSources.includes(evidence.source)) {
+      err(`${label}: evidence source ${evidence.source} is not present in sources`);
+    }
+    if (!sourceIds.has(evidence.source)) {
+      err(`${label}: evidence references unknown source ${evidence.source}`);
+    }
+    if (!evidenceSupports.has(evidence.support)) {
+      err(`${label}: evidence for ${evidence.source} has invalid support type ${evidence.support}`);
+    }
+    if (typeof evidence.locator !== 'string' || !evidence.locator.trim()) {
+      err(`${label}: evidence for ${evidence.source} needs a non-empty locator`);
+    }
+    if (typeof evidence.note !== 'string' || !evidence.note.trim()) {
+      err(`${label}: evidence for ${evidence.source} needs a non-empty note`);
+    }
+  }
+  if ((kind === 'MUST' || kind === 'SHOULD')
+      && !entries.some((e) => e && (e.support === 'direct' || e.support === 'derived'))) {
+    err(`${label}: ${kind} content needs direct or derived evidence; contextual evidence cannot establish a normative level`);
+  }
 }
 
 // --- source registry -----------------------------------------------------------
@@ -133,6 +166,8 @@ for (const file of specFiles) {
       if (!sourceIds.has(s)) err(`${label}: rule ${r.id} references unknown source ${s}`);
       else if (sourceIds.get(s).tier > 5) err(`${label}: rule ${r.id} uses tier ${sourceIds.get(s).tier} source ${s}; content requires tier 1–5 provenance`);
     }
+    validateEvidence(r.evidence, `${label}: rule ${r.id}`, r.sources, r.level);
+    if (r.superseded_by && r.superseded_by === r.id) err(`${label}: rule ${r.id} cannot supersede itself`);
     for (const e of r.edge_cases || []) { /* checked after edge loading */ }
     for (const x of r.related_rules || []) { /* checked after all rules loaded */ }
     if ((r.level === 'MUST' || r.level === 'SHOULD') && (r.sources || []).length === 0) {
@@ -160,6 +195,7 @@ for (const file of edgeFiles) {
       if (!sourceIds.has(s)) err(`${label}: case ${c.id} references unknown source ${s}`);
       else if (sourceIds.get(s).tier > 5) err(`${label}: case ${c.id} uses tier ${sourceIds.get(s).tier} source ${s}; content requires tier 1–5 provenance`);
     }
+    validateEvidence(c.evidence, `${label}: case ${c.id}`, c.sources, 'edge case');
   }
 }
 
@@ -184,6 +220,11 @@ for (const [caseId, file] of edgeCases) {
   }
 }
 
+// Markdown examples are part of the public navigation surface. A stale rule or
+// edge-case ID in prose is a broken example even when every YAML file validates.
+const allIds = new Set([...rules.keys(), ...edgeCases.keys()]);
+const boringIdRe = /BORING-(?:EDGE-)?[A-Z0-9]+(?:-[A-Z0-9]+)*-\d{3}/g;
+
 // --- internal markdown links ---------------------------------------------------
 
 const mdFiles = [...new Set([
@@ -193,6 +234,9 @@ const mdFiles = [...new Set([
 const linkRe = /\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
 for (const file of mdFiles) {
   const text = readFileSync(file, 'utf8');
+  for (const match of text.matchAll(boringIdRe)) {
+    if (!allIds.has(match[0])) err(`${rel(file)}: documentation references unknown ID ${match[0]}`);
+  }
   for (const m of text.matchAll(linkRe)) {
     let target = m[1];
     if (/^(https?:|mailto:|#|<)/i.test(target)) continue;

@@ -1,3 +1,4 @@
+schema_version: 1
 spec:
   id: webhooks
   title: Webhooks
@@ -19,7 +20,7 @@ spec:
       title: Process deliveries idempotently
       level: MUST
       status: draft
-      summary: >
+      statement: >
         Webhook processing must be safe to repeat. Receiving the same delivery —
         or an equivalent event for the same object and action — more than once
         must not duplicate business side effects.
@@ -35,10 +36,17 @@ spec:
         - The same transactional email is sent twice.
         - A handler that partially succeeded before failing duplicates its effects when retried.
       sources: [STRIPE-WEBHOOK-DOCS, GITHUB-WEBHOOK-DOCS, RFC-9110, STRIPE-IDEMPOTENCY]
+      evidence:
+        - source: STRIPE-WEBHOOK-DOCS
+          locator: "Duplicates; Event ordering; Retries; Signatures"
+          support: derived
+          note: >
+            Boring derives this framework-neutral requirement from the cited STRIPE-WEBHOOK-DOCS behavior and the failure mode; the source is not being presented as a universal vendor-independent mandate.
       edge_cases: [BORING-EDGE-WEBHOOK-001, BORING-EDGE-WEBHOOK-004]
       related_rules: [BORING-WEBHOOK-008]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: an event that has already been processed successfully
             when: the exact same delivery arrives again
@@ -55,7 +63,7 @@ spec:
       title: Verify sender authenticity and fail closed
       level: MUST
       status: draft
-      summary: >
+      statement: >
         Deliveries must be authenticated using the provider's signature scheme —
         typically an HMAC over the raw request body with a shared secret. Requests
         with missing, malformed, or invalid signatures must be rejected without
@@ -68,15 +76,24 @@ spec:
         - The provider offers a signature or authentication scheme for deliveries.
       exceptions:
         - Providers that offer no signature scheme require a different authenticating channel (e.g., verifying via a follow-up authenticated API call).
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - A forged event triggers a state change (e.g., "payment succeeded" for a payment that never happened).
         - The signature is checked against the parsed/re-serialized body instead of the raw bytes and fails or passes incorrectly.
         - Non-constant-time comparison leaks signature bytes.
       sources: [STRIPE-WEBHOOK-DOCS, GITHUB-WEBHOOK-VALIDATION]
+      evidence:
+        - source: STRIPE-WEBHOOK-DOCS
+          locator: "Duplicates; Event ordering; Retries; Signatures"
+          support: derived
+          note: >
+            Boring derives this framework-neutral requirement from the cited STRIPE-WEBHOOK-DOCS behavior and the failure mode; the source is not being presented as a universal vendor-independent mandate.
       edge_cases: [BORING-EDGE-WEBHOOK-011, BORING-EDGE-WEBHOOK-010]
       related_rules: [BORING-WEBHOOK-003]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: a request with no signature header
             when: it is sent to the webhook endpoint
@@ -90,12 +107,12 @@ spec:
 
     - id: BORING-WEBHOOK-003
       title: Enforce replay windows when the scheme embeds a timestamp
-      level: MUST
+      level: SHOULD
       status: draft
-      summary: >
+      statement: >
         When the provider's signature scheme includes a delivery timestamp, verification
-        must reject deliveries whose timestamp is older than a tolerance window —
-        verifying the HMAC alone is not replay protection.
+        should reject deliveries whose timestamp is older than a documented tolerance
+        window; verifying the HMAC alone is not replay protection.
       why:
         - A captured delivery keeps its valid signature; only the timestamp makes its age checkable.
         - Stripe's timestamp is part of the signed payload and its libraries use a default tolerance of five minutes.
@@ -103,14 +120,23 @@ spec:
         - The signature scheme embeds a timestamp (e.g., Stripe's `t=` parameter).
       exceptions:
         - Schemes without timestamps need application-level deduplication by delivery/event ID instead.
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - An old but correctly signed delivery is accepted and re-triggers processing (replay attack).
         - A tolerance of zero rejects all legitimate delayed deliveries.
       sources: [STRIPE-WEBHOOK-DOCS]
+      evidence:
+        - source: STRIPE-WEBHOOK-DOCS
+          locator: "Duplicates; Event ordering; Retries; Signatures"
+          support: derived
+          note: >
+            Boring derives this framework-neutral requirement from the cited STRIPE-WEBHOOK-DOCS behavior and the failure mode; the source is not being presented as a universal vendor-independent mandate.
       edge_cases: [BORING-EDGE-WEBHOOK-011]
       related_rules: [BORING-WEBHOOK-001]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: a correctly signed delivery whose embedded timestamp is far outside the tolerance window
             when: it is sent to the webhook endpoint
@@ -122,7 +148,7 @@ spec:
       title: Acknowledge quickly and process asynchronously
       level: SHOULD
       status: draft
-      summary: >
+      statement: >
         Return a 2xx response promptly — before slow or complex logic — and perform
         processing asynchronously (e.g., via a queue). Long synchronous processing
         risks timeouts, which providers treat as failed delivery and then retry.
@@ -132,14 +158,23 @@ spec:
       applies_when:
         - Processing the event takes non-trivial time relative to the provider's response deadline.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - Slow handlers time out, the provider retries, and the endpoint faces a retry storm.
         - Retries plus synchronous processing multiply duplicate side effects.
       sources: [STRIPE-WEBHOOK-DOCS, GITHUB-WEBHOOK-DOCS]
+      evidence:
+        - source: STRIPE-WEBHOOK-DOCS
+          locator: "Duplicates; Event ordering; Retries; Signatures"
+          support: derived
+          note: >
+            Boring derives this framework-neutral requirement from the cited STRIPE-WEBHOOK-DOCS behavior and the failure mode; the source is not being presented as a universal vendor-independent mandate.
       edge_cases: [BORING-EDGE-WEBHOOK-006]
       related_rules: [BORING-WEBHOOK-005]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: a handler whose processing takes longer than the provider's response deadline
             when: a delivery arrives
@@ -152,7 +187,7 @@ spec:
       title: Treat 2xx as the only success signal and never acknowledge before the delivery is durable
       level: MUST
       status: draft
-      summary: >
+      statement: >
         A 2xx response tells the provider to stop retrying. Return 2xx only once the
         delivery is durably accepted (e.g., persisted to a queue or store); a crash
         between acknowledging and processing must not lose the event.
@@ -162,14 +197,23 @@ spec:
       applies_when:
         - The application relies on provider retries or its own persistence for reliability.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - The handler returns 200 immediately, then crashes or the queue is full — the event vanishes with no retry.
         - Returning 3xx/4xx/5xx for events that were actually handled, causing spurious retries.
       sources: [STRIPE-WEBHOOK-DOCS, GITHUB-WEBHOOK-DOCS, RFC-9110]
+      evidence:
+        - source: STRIPE-WEBHOOK-DOCS
+          locator: "Duplicates; Event ordering; Retries; Signatures"
+          support: derived
+          note: >
+            Boring derives this framework-neutral requirement from the cited STRIPE-WEBHOOK-DOCS behavior and the failure mode; the source is not being presented as a universal vendor-independent mandate.
       edge_cases: [BORING-EDGE-WEBHOOK-006]
       related_rules: [BORING-WEBHOOK-004, BORING-WEBHOOK-008]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: a delivery that has been acknowledged with 200
             when: the worker crashes before processing
@@ -181,7 +225,7 @@ spec:
       title: Process events order-independently
       level: MUST
       status: draft
-      summary: >
+      statement: >
         Processing must not assume events arrive in the order they were generated.
         State transitions must be guarded so a late or reordered event cannot
         corrupt state — e.g., by checking current state, versioning, or re-fetching
@@ -192,14 +236,23 @@ spec:
       applies_when:
         - Events describe state transitions of the same object.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - A delayed `subscription.updated` overwrites a newer cancellation.
         - A payment.succeeded event is processed before payment.intended, creating state the domain considers impossible.
       sources: [STRIPE-WEBHOOK-DOCS]
+      evidence:
+        - source: STRIPE-WEBHOOK-DOCS
+          locator: "Duplicates; Event ordering; Retries; Signatures"
+          support: derived
+          note: >
+            Boring derives this framework-neutral requirement from the cited STRIPE-WEBHOOK-DOCS behavior and the failure mode; the source is not being presented as a universal vendor-independent mandate.
       edge_cases: [BORING-EDGE-WEBHOOK-002, BORING-EDGE-WEBHOOK-003]
       related_rules: [BORING-WEBHOOK-013]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: an event stream where the later state change is delivered before the earlier one
             when: both are processed
@@ -209,26 +262,36 @@ spec:
 
     - id: BORING-WEBHOOK-007
       title: Acknowledge unknown event types gracefully
-      level: MUST
+      level: SHOULD
       status: draft
-      summary: >
-        Unknown or not-yet-supported event types must be acknowledged with 2xx —
-        optionally stored for later inspection — and must never be treated as
-        permanent processing failures.
+      statement: >
+        Unknown or not-yet-supported event types should be acknowledged with 2xx —
+        optionally stored for later inspection — when the provider contract permits
+        safe acknowledgement; they should not be treated as permanent processing
+        failures merely because the consumer has not implemented them yet.
       why:
         - Providers add new event types over time; rejecting them converts provider evolution into your outage and burns the retry budget.
         - Provider documentation treats unhandled event types as valid deliveries that can be safely ignored.
       applies_when:
         - The consumer handles a subset of the provider's event catalog.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - A new provider event type triggers 4xx/5xx responses, retries, and alert noise.
         - Strict deserialization fails the whole batch because of one unknown event type.
       sources: [STRIPE-WEBHOOK-DOCS, GITHUB-WEBHOOK-DOCS]
+      evidence:
+        - source: STRIPE-WEBHOOK-DOCS
+          locator: "Duplicates; Event ordering; Retries; Signatures"
+          support: derived
+          note: >
+            Boring derives this framework-neutral requirement from the cited STRIPE-WEBHOOK-DOCS behavior and the failure mode; the source is not being presented as a universal vendor-independent mandate.
       edge_cases: [BORING-EDGE-WEBHOOK-008]
       related_rules: [BORING-WEBHOOK-009]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: a delivery with a syntactically valid but unrecognized event type
             when: it is processed
@@ -241,7 +304,7 @@ spec:
       title: Persist deliveries before processing
       level: SHOULD
       status: draft
-      summary: >
+      statement: >
         Store received events — with provider event and delivery IDs — before or during
         processing, so processing can be retried, deduplicated, audited, and replayed
         after downtime.
@@ -252,14 +315,23 @@ spec:
       applies_when:
         - The consumer needs reliability beyond best-effort in-order processing.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - After an outage, there is no record of which deliveries were missed or half-processed.
         - Deduplication relies on in-memory state that is lost on restart.
       sources: [STRIPE-WEBHOOK-DOCS, GITHUB-WEBHOOK-DOCS]
+      evidence:
+        - source: STRIPE-WEBHOOK-DOCS
+          locator: "Duplicates; Event ordering; Retries; Signatures"
+          support: derived
+          note: >
+            Boring derives this framework-neutral requirement from the cited STRIPE-WEBHOOK-DOCS behavior and the failure mode; the source is not being presented as a universal vendor-independent mandate.
       edge_cases: [BORING-EDGE-WEBHOOK-005, BORING-EDGE-WEBHOOK-007]
       related_rules: [BORING-WEBHOOK-001, BORING-WEBHOOK-005]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: deliveries received and processed during normal operation
             when: an auditor asks which events affected an entity
@@ -271,7 +343,7 @@ spec:
       title: Treat event payloads as untrusted input
       level: MUST
       status: draft
-      summary: >
+      statement: >
         Validate the event structure and every field the handler uses — types,
         ranges, required values — before acting on it. Tolerate unknown fields.
         Never assume payload values are correct or current when correctness
@@ -282,14 +354,23 @@ spec:
       applies_when:
         - Any consumed payload influences business decisions.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - A new provider field added to a payload breaks a strict deserializer and the whole event fails.
         - An amount is used without range validation, corrupting financial state.
       sources: [STRIPE-WEBHOOK-DOCS, RFC-8259]
+      evidence:
+        - source: STRIPE-WEBHOOK-DOCS
+          locator: "Duplicates; Event ordering; Retries; Signatures"
+          support: derived
+          note: >
+            Boring derives this framework-neutral requirement from the cited STRIPE-WEBHOOK-DOCS behavior and the failure mode; the source is not being presented as a universal vendor-independent mandate.
       edge_cases: [BORING-EDGE-WEBHOOK-009]
       related_rules: [BORING-WEBHOOK-013]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: an otherwise valid event containing an additional unknown field
             when: it is processed
@@ -305,7 +386,7 @@ spec:
       title: Support signing-secret rotation without dropped deliveries
       level: SHOULD
       status: draft
-      summary: >
+      statement: >
         During secret rotation, keep verifying signatures made with the previous
         secret for a bounded overlap window, so in-flight senders and rolling
         providers do not cause rejections.
@@ -313,14 +394,23 @@ spec:
         - Providers keep the old signing secret valid during rotation (Stripe keeps it active for up to 24 hours after rolling) — consumers must match that behavior.
       applies_when:
         - The signing secret is rotated periodically or on suspected compromise.
+      does_not_apply_when:
+        - Immediate revocation is required because the secret is known or suspected to be compromised.
       exceptions: []
       failure_modes:
         - Rotating the secret on the consumer before the sender causes every delivery to fail verification until they re-sync.
       sources: [STRIPE-WEBHOOK-DOCS]
+      evidence:
+        - source: STRIPE-WEBHOOK-DOCS
+          locator: "Duplicates; Event ordering; Retries; Signatures"
+          support: derived
+          note: >
+            Boring derives this framework-neutral requirement from the cited STRIPE-WEBHOOK-DOCS behavior and the failure mode; the source is not being presented as a universal vendor-independent mandate.
       edge_cases: [BORING-EDGE-WEBHOOK-010]
       related_rules: [BORING-WEBHOOK-002]
       verification:
-        automatable: yes
+        automatable: true
+        visibility: [black-box]
         scenarios:
           - given: a secret rotation has just occurred
             when: a delivery signed with the previous secret arrives within the overlap window
@@ -332,7 +422,7 @@ spec:
       title: Protect shared state against concurrent deliveries
       level: SHOULD
       status: draft
-      summary: >
+      statement: >
         Providers may deliver concurrently. Processing two events for the same
         entity — or the same event twice — at the same time must not corrupt
         state: serialize per entity, lock per event, or use atomic state
@@ -342,14 +432,23 @@ spec:
       applies_when:
         - Multiple workers or async processing touch shared state.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - Two concurrent workers both read "unprocessed" for the same event and both apply its effects.
         - Read-modify-write cycles lose one of two concurrent updates.
       sources: [STRIPE-WEBHOOK-DOCS]
+      evidence:
+        - source: STRIPE-WEBHOOK-DOCS
+          locator: "Duplicates; Event ordering; Retries; Signatures"
+          support: derived
+          note: >
+            Boring derives this framework-neutral requirement from the cited STRIPE-WEBHOOK-DOCS behavior and the failure mode; the source is not being presented as a universal vendor-independent mandate.
       edge_cases: [BORING-EDGE-WEBHOOK-007]
       related_rules: [BORING-WEBHOOK-001]
       verification:
         automatable: partial
+        visibility: [black-box, source-review]
         scenarios:
           - given: two events affecting the same entity delivered simultaneously
             when: both are processed concurrently
@@ -361,7 +460,7 @@ spec:
       title: Monitor failures and plan for exhausted retries
       level: SHOULD
       status: draft
-      summary: >
+      statement: >
         Track delivery failures and alert on them; define what happens when a
         provider exhausts its retry budget (dead-letter storage plus manual or
         automatic replay), and know the provider's replay tools.
@@ -370,14 +469,23 @@ spec:
       applies_when:
         - Missed events have business consequences.
       exceptions: []
+      does_not_apply_when:
+        - The feature, transport, or protocol described in applies_when is not used; this rule is not a substitute for a different contract.
       failure_modes:
         - The consumer was down for a week; nobody notices the permanently missed events for months.
         - No dead-letter store exists, so recovery depends entirely on provider-side retention windows.
       sources: [STRIPE-WEBHOOK-DOCS, GITHUB-WEBHOOK-DOCS]
+      evidence:
+        - source: STRIPE-WEBHOOK-DOCS
+          locator: "Duplicates; Event ordering; Retries; Signatures"
+          support: derived
+          note: >
+            Boring derives this framework-neutral requirement from the cited STRIPE-WEBHOOK-DOCS behavior and the failure mode; the source is not being presented as a universal vendor-independent mandate.
       edge_cases: [BORING-EDGE-WEBHOOK-005]
       related_rules: [BORING-WEBHOOK-008]
       verification:
-        automatable: manual
+        automatable: false
+        visibility: [source-review, manual]
         scenarios:
           - given: the consumer was unavailable longer than the provider's retry window
             when: recovery is performed
@@ -389,7 +497,7 @@ spec:
       title: Decide deliberately whether to trust the payload or fetch current state
       level: CONSIDER
       status: draft
-      summary: >
+      statement: >
         For each event type, deliberately decide whether handler logic acts on the
         payload as delivered or re-fetches the authoritative object from the
         provider API, and document that choice.
@@ -402,10 +510,17 @@ spec:
         - Acting on a stale snapshot overwrites newer state chosen elsewhere.
         - Re-fetching for every event makes the consumer unusable during provider API incidents.
       sources: [STRIPE-WEBHOOK-DOCS]
+      evidence:
+        - source: STRIPE-WEBHOOK-DOCS
+          locator: "Duplicates; Event ordering; Retries; Signatures"
+          support: derived
+          note: >
+            Boring derives this framework-neutral requirement from the cited STRIPE-WEBHOOK-DOCS behavior and the failure mode; the source is not being presented as a universal vendor-independent mandate.
       edge_cases: [BORING-EDGE-WEBHOOK-003]
       related_rules: [BORING-WEBHOOK-006]
       verification:
-        automatable: manual
+        automatable: false
+        visibility: [source-review, manual]
         scenarios:
           - given: the documented trust/fetch policy per event type
             when: reviewing handler code

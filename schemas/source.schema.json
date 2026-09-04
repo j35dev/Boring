@@ -13,8 +13,10 @@
       "title": { "type": "string", "minLength": 1 },
       "organization": { "type": "string", "minLength": 1 },
       "type": { "enum": [
-        "standard", "authoritative-guidance", "vendor-docs",
-        "corpus", "incident-report", "community"
+        "standard", "security-standard", "authoritative-guidance",
+        "official-vendor-documentation", "reference-data", "oss-corpus",
+        "engineering-incident", "research", "community-evidence",
+        "vendor-docs", "corpus", "incident-report", "community"
       ] },
       "tier": { "type": "integer", "minimum": 1, "maximum": 6 },
       "url": { "type": "string", "pattern": "^https://\\S+$" },
@@ -22,6 +24,11 @@
       "license": {
         "type": "string",
         "description": "License of the source material, when relevant to reuse."
+      },
+      "version": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Edition or revision when the source is versioned."
       },
       "accessed": { "$ref": "#/$defs/date" },
       "notes": { "type": "string", "minLength": 1 }

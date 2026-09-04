@@ -1,3 +1,4 @@
+schema_version: 1
 dataset:
   id: files-uploads
   title: File uploads
@@ -22,6 +23,12 @@ cases:
       expect:
         - behavior follows the application's documented policy at every step, without crashes or opaque errors
     sources: [OWASP-FILE-UPLOAD]
+    evidence:
+      - source: OWASP-FILE-UPLOAD
+        locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+        support: direct
+        note: >
+          The cited OWASP-FILE-UPLOAD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-UPLOAD-006]
     tags: [empty, boundary]
 
@@ -36,6 +43,12 @@ cases:
         - the at-limit upload succeeds intact
         - the over-limit upload is rejected cleanly with a defined error — never truncated into a stored object
     sources: [OWASP-FILE-UPLOAD]
+    evidence:
+      - source: OWASP-FILE-UPLOAD
+        locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+        support: direct
+        note: >
+          The cited OWASP-FILE-UPLOAD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-UPLOAD-001]
     tags: [limits, boundary]
 
@@ -50,6 +63,12 @@ cases:
         - the server streams or bounds memory rather than buffering the whole file
         - the request is rejected or degrades gracefully instead of exhausting the instance
     sources: [OWASP-FILE-UPLOAD]
+    evidence:
+      - source: OWASP-FILE-UPLOAD
+        locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+        support: direct
+        note: >
+          The cited OWASP-FILE-UPLOAD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-UPLOAD-001]
     tags: [dos, streaming]
 
@@ -70,6 +89,12 @@ cases:
       expect:
         - storage uses a server-generated key; the hostile filename never reaches a filesystem path or object key
     sources: [OWASP-FILE-UPLOAD]
+    evidence:
+      - source: OWASP-FILE-UPLOAD
+        locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+        support: direct
+        note: >
+          The cited OWASP-FILE-UPLOAD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-UPLOAD-004]
     tags: [path-traversal, filenames]
 
@@ -88,6 +113,12 @@ cases:
       expect:
         - behavior follows the documented limits (BORING-UPLOAD-005), with clear errors instead of storage-time 500s
     sources: [OWASP-FILE-UPLOAD]
+    evidence:
+      - source: OWASP-FILE-UPLOAD
+        locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+        support: direct
+        note: >
+          The cited OWASP-FILE-UPLOAD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-UPLOAD-005]
     tags: [filenames, limits]
 
@@ -113,6 +144,12 @@ cases:
         - storage keys are server-generated; the original name survives only as sanitized metadata
         - display and download handle Unicode, RTL, and odd characters without corruption
     sources: [OWASP-FILE-UPLOAD]
+    evidence:
+      - source: OWASP-FILE-UPLOAD
+        locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+        support: direct
+        note: >
+          The cited OWASP-FILE-UPLOAD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-UPLOAD-004, BORING-UPLOAD-005]
     tags: [filenames, unicode]
 
@@ -126,6 +163,12 @@ cases:
       expect:
         - the result follows the documented collision policy — no silent overwrite of someone else's object
     sources: [OWASP-FILE-UPLOAD]
+    evidence:
+      - source: OWASP-FILE-UPLOAD
+        locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+        support: direct
+        note: >
+          The cited OWASP-FILE-UPLOAD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-UPLOAD-007]
     tags: [collision, overwrite]
 
@@ -139,6 +182,12 @@ cases:
       expect:
         - the final object is exactly one of the uploads, deterministically, and readers never observe a half-written file
     sources: [OWASP-FILE-UPLOAD]
+    evidence:
+      - source: OWASP-FILE-UPLOAD
+        locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+        support: direct
+        note: >
+          The cited OWASP-FILE-UPLOAD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-UPLOAD-007, BORING-UPLOAD-011]
     tags: [concurrency, atomicity]
 
@@ -153,6 +202,12 @@ cases:
         - retrieval is denied per the file's visibility policy
         - unknowable-by-construction URLs are treated as obfuscation, not authorization
     sources: [OWASP-FILE-UPLOAD]
+    evidence:
+      - source: OWASP-FILE-UPLOAD
+        locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+        support: direct
+        note: >
+          The cited OWASP-FILE-UPLOAD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-UPLOAD-008]
     tags: [idor, access-control]
 
@@ -172,6 +227,12 @@ cases:
         - validation judges content (BORING-UPLOAD-002), not the trailing extension
         - downloads do not present an executable extension the server did not intend to serve
     sources: [OWASP-FILE-UPLOAD]
+    evidence:
+      - source: OWASP-FILE-UPLOAD
+        locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+        support: direct
+        note: >
+          The cited OWASP-FILE-UPLOAD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-UPLOAD-002, BORING-UPLOAD-003]
     tags: [extension, disguise]
 
@@ -190,6 +251,12 @@ cases:
       expect:
         - the mismatch is detected by content inspection and handled per policy (reject, quarantine, or store as the true type)
     sources: [OWASP-FILE-UPLOAD]
+    evidence:
+      - source: OWASP-FILE-UPLOAD
+        locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+        support: direct
+        note: >
+          The cited OWASP-FILE-UPLOAD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-UPLOAD-002]
     tags: [mime, spoofing]
 
@@ -206,6 +273,12 @@ cases:
       expect:
         - serving never renders it inline in the application's origin (attachment disposition, nosniff, safe content type, or a sandboxed origin)
     sources: [OWASP-FILE-UPLOAD]
+    evidence:
+      - source: OWASP-FILE-UPLOAD
+        locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+        support: direct
+        note: >
+          The cited OWASP-FILE-UPLOAD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-UPLOAD-003]
     tags: [xss, serving]
 
@@ -220,6 +293,12 @@ cases:
         - dimensions and allocation are bounded before decoding (no trust in header-declared sizes)
         - the bomb is rejected without exhausting memory
     sources: [OWASP-FILE-UPLOAD]
+    evidence:
+      - source: OWASP-FILE-UPLOAD
+        locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+        support: direct
+        note: >
+          The cited OWASP-FILE-UPLOAD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-UPLOAD-009]
     tags: [dos, images]
 
@@ -234,6 +313,12 @@ cases:
         - pre-extraction checks bound total size, file count, per-file size, and depth
         - entry paths cannot escape the extraction sandbox
     sources: [OWASP-FILE-UPLOAD]
+    evidence:
+      - source: OWASP-FILE-UPLOAD
+        locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+        support: direct
+        note: >
+          The cited OWASP-FILE-UPLOAD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-UPLOAD-010]
     tags: [dos, zip-slip]
 
@@ -249,5 +334,11 @@ cases:
         - temporary data is quarantined or cleaned up per the documented retention policy
         - resumable retries produce the intended content, exactly once
     sources: [OWASP-FILE-UPLOAD, RFC-9110]
+    evidence:
+      - source: OWASP-FILE-UPLOAD
+        locator: "Validation; Upload Limits; Filesystem; ZIP/XML bombs"
+        support: direct
+        note: >
+          The cited OWASP-FILE-UPLOAD material supports this scenario or its expected behavior; the example is an original Boring formulation.
     related_rules: [BORING-UPLOAD-011, BORING-UPLOAD-007]
     tags: [interruption, resumable]
