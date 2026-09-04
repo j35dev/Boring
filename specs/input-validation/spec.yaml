@@ -1,0 +1,376 @@
+spec:
+  id: input-validation
+  title: Input, Text & Unicode
+  domain: input-validation
+  summary: >
+    Behavior a correct text-handling implementation must implement: Unicode
+    normalization, length semantics across encodings, trust-boundary
+    validation, invisible characters, casing, bidi text, and parsing of
+    structured identifiers like email addresses.
+  version: 0.1.0
+  status: draft
+  updated: "2026-09-04"
+  applies_when:
+    - The application accepts, stores, compares, transforms, or displays text from users or external systems.
+  does_not_apply_when:
+    - The application handles no text at all (rare).
+  rules:
+    - id: BORING-INPUT-001
+      title: Define and apply a Unicode normalization policy
+      level: MUST
+      status: draft
+      summary: >
+        The application must define which Unicode normalization form (typically
+        NFC) it uses, apply it consistently before comparison, uniqueness, and
+        storage decisions, and never assume that input is already normalized.
+      why:
+        - Two strings that display identically can be encoded differently (precomposed é vs e + combining accent); treating them as different breaks uniqueness checks and duplicate detection.
+        - Unicode defines canonical equivalence — canonically equivalent strings must be treated as equal by conforming implementations (UAX #15 §1.1).
+        - Normalization is not closed under concatenation (UAX #15 §1.4) — so "normalize at the edges once" is not sufficient reasoning.
+      applies_when:
+        - User text is compared, deduplicated, or used as an identifier (usernames, emails, tags, codes).
+      exceptions: []
+      failure_modes:
+        - A user registers "José", then "José" (decomposed) registers again as a "different" user.
+        - Search and lookup miss canonically equivalent matches.
+      sources: [UNICODE-UAX15]
+      edge_cases: [BORING-EDGE-TEXT-001, BORING-EDGE-TEXT-002]
+      related_rules: [BORING-INPUT-003]
+      verification:
+        automatable: partial
+        scenarios:
+          - given: a canonically equivalent pair of strings (NFC and NFD encodings of the same name)
+            when: both are submitted to a uniqueness-sensitive flow (registration, duplicate check)
+            expect:
+              - the application treats them according to its documented normalization policy — consistently
+      tags: [unicode, normalization, identity]
+
+    - id: BORING-INPUT-002
+      title: Know the difference between bytes, code points, and grapheme clusters
+      level: MUST
+      status: draft
+      summary: >
+        Length limits, truncation, and "character" counting must be defined in a
+        deliberate unit — bytes, Unicode code points, or user-perceived
+        characters (grapheme clusters) — and truncation must never split a
+        grapheme cluster or a surrogate pair.
+      why:
+        - Length is three different numbers — an emoji-with-skin-tone is 1 grapheme, 4-7 code points, and 8-28 bytes depending on encoding.
+        - Grapheme clusters are the standard programmatic approximation of user-perceived characters (UAX #29 §3), and emoji sequences are single grapheme clusters (UAX #29 GB11).
+        - Storage limits are bytes; UI counters show graphemes; NIST password rules count each Unicode code point as one character — three legitimate units that must be chosen deliberately per use.
+      applies_when:
+        - Text is length-limited, truncated, counted, or paginated.
+      exceptions: []
+      failure_modes:
+        - Truncating to 30 code points slices a flag emoji or a family emoji into replacement characters.
+        - A limit defined in bytes rejects short CJK/emoji input that users perceive as well under the limit.
+      sources: [UNICODE-UAX29, UNICODE-STD, NIST-800-63B]
+      edge_cases: [BORING-EDGE-TEXT-011, BORING-EDGE-TEXT-013, BORING-EDGE-TEXT-019]
+      related_rules: [BORING-INPUT-004]
+      verification:
+        automatable: partial
+        scenarios:
+          - given: a string of maximum allowed length built entirely from multi-code-point graphemes
+            when: it is truncated by one unit and length-checked
+            expect:
+              - no grapheme cluster is split; the unit used matches the documented policy
+      tags: [unicode, length, encoding]
+
+    - id: BORING-INPUT-003
+      title: Validate the decoded and canonical form, at the trust boundary
+      level: MUST
+      status: draft
+      summary: >
+        Input must be validated after all decodings and normalizations it will
+        undergo (URL decoding, HTML unescaping, Unicode normalization, JSON
+        parsing) — and validation must happen when untrusted data enters the
+        application, not where it happens to be convenient.
+      why:
+        - Encoding layers create a gap between what is validated and what is executed or stored, where %3Cscript%3E and <script> are the same bytes downstream.
+        - OWASP requires validation on all potentially untrusted sources, as early as possible in the data flow, with canonical encoding across text; its File Upload guidance states the imperative plainly that validation must occur after decoding.
+      applies_when:
+        - Any untrusted input enters the application through any protocol.
+      exceptions: []
+      failure_modes:
+        - Validation rejects `<script>` but accepts its URL-encoded or double-encoded form.
+        - JSON parsing maps an invalid escape into a different string than the one validated.
+      sources: [OWASP-INPUT-VALIDATION, OWASP-FILE-UPLOAD]
+      edge_cases: [BORING-EDGE-TEXT-016, BORING-EDGE-TEXT-018]
+      related_rules: [BORING-INPUT-001]
+      verification:
+        automatable: yes
+        scenarios:
+          - given: a payload whose dangerous form appears only after decoding or normalization
+            when: it passes through the full input pipeline
+            expect:
+              - validation sees and applies to the decoded form; the dangerous form does not survive to storage or execution
+      tags: [validation, encoding]
+
+    - id: BORING-INPUT-004
+      title: Define per-field length limits in the right unit
+      level: MUST
+      status: draft
+      summary: >
+        Every text field must have a defined maximum length — chosen deliberately
+        per field, documented, and enforced consistently on input and storage —
+        in a unit that matches its purpose (see BORING-INPUT-002).
+      why:
+        - Unbounded text is a storage, performance, and display hazard; but the "right" maximum is a product decision, not a universal constant — so the requirement is to decide and enforce, not to adopt a specific number.
+        - Database column limits, index key limits, and UI layouts all fail differently when limits are undefined.
+      applies_when:
+        - Any text field exists.
+      decision_required: true
+      failure_modes:
+        - A 50,000-character "name" is accepted, then breaks rendering, exports, and downstream APIs.
+        - Client and server enforce different limits, so valid-looking input fails late.
+      sources: [OWASP-INPUT-VALIDATION]
+      edge_cases: [BORING-EDGE-TEXT-019, BORING-EDGE-TEXT-020]
+      related_rules: [BORING-INPUT-002]
+      verification:
+        automatable: yes
+        scenarios:
+          - given: each text field's documented limit
+            when: input at the limit and one unit over is submitted
+            expect:
+              - at-limit succeeds everywhere it is processed; over-limit is rejected consistently with a clear error
+      tags: [limits, decision-required]
+
+    - id: BORING-INPUT-005
+      title: Define a policy for control characters and invalid encodings
+      level: MUST
+      status: draft
+      summary: >
+        The application must define how it handles control characters (other
+        than expected whitespace/newlines) and text that is not validly encoded
+        (invalid UTF-8, unpaired surrogates): reject, replace, or strip —
+        consistently, and without letting invalid sequences corrupt storage.
+      why:
+        - Invalid encodings and control characters break parsers, logs, terminals, and downstream systems; "it worked in testing" just means they were never tested.
+        - Some control characters are attack-relevant (e.g., terminal escapes in logs, CRLF injection in headers).
+      applies_when:
+        - Text is accepted from clients or external systems.
+      exceptions: []
+      failure_modes:
+        - An unpaired surrogate (legal in some JSON/JS paths) crashes a UTF-8 encoder or persists as mojibake.
+        - A NUL byte truncates a C-string downstream; an ESC sequence injects into terminal logs.
+      sources: [OWASP-INPUT-VALIDATION, UNICODE-TR36]
+      edge_cases: [BORING-EDGE-TEXT-017, BORING-EDGE-TEXT-018]
+      related_rules: [BORING-INPUT-003]
+      verification:
+        automatable: partial
+        scenarios:
+          - given: input containing control characters and invalidly-encoded sequences
+            when: it passes validation, storage, and display
+            expect:
+              - behavior matches the documented policy at every step; storage is never corrupted
+      tags: [control-characters, encoding, robustness]
+
+    - id: BORING-INPUT-006
+      title: Define a whitespace policy per field
+      level: CONSIDER
+      status: draft
+      summary: >
+        Each text field should have a deliberately defined whitespace policy —
+        trim leading and trailing, preserve internal, and how to treat non-ASCII
+        whitespace (NBSP, zero-width space) — applied consistently, including
+        which fields reject whitespace-only input.
+      why:
+        - A password with a trailing space is different from a username with one; trimming the wrong field is a data bug, not trimming any field fills the database with `"   "`.
+        - Unicode has dozens of space-like characters; ASCII-only trimming misses most of them.
+      applies_when:
+        - Any text field exists.
+      decision_required: true
+      failure_modes:
+        - Duplicated accounts from `" bob"` vs `"bob"`.
+        - Whitespace-only bios and comments stored as content.
+      sources: [UNICODE-STD]
+      edge_cases: [BORING-EDGE-TEXT-014, BORING-EDGE-TEXT-015]
+      related_rules: [BORING-INPUT-004]
+      verification:
+        automatable: yes
+        scenarios:
+          - given: inputs that differ only in leading/trailing/non-ASCII whitespace
+            when: they are submitted to uniqueness-sensitive flows
+            expect:
+              - the documented whitespace policy decides; behavior is consistent
+      tags: [whitespace, policy, decision-required]
+
+    - id: BORING-INPUT-007
+      title: Define a policy for zero-width and invisible characters
+      level: MUST
+      status: draft
+      summary: >
+        The application must define how zero-width and otherwise invisible
+        characters (zero-width space, zero-width joiner, soft hyphen, BOM
+        mid-text) are handled in identifiers and display text: strip, preserve,
+        or reject — consistently.
+      why:
+        - Invisible characters make two identifiers look identical while differing in bytes — a classic spoofing vector in usernames, coupon codes, and search.
+        - Unicode security guidance restricts invisibles in identifiers precisely because they bypass human review (UTS #36 §2.4; UTS #39 marks ZWJ/ZWNJ restricted for identifiers since Unicode 15.0).
+      applies_when:
+        - Text is used as an identifier, code, or handle; and where display text is security-relevant.
+      decision_required: true
+      failure_modes:
+        - A coupon code pasted with a trailing zero-width space fails lookup.
+        - An "admin" username with an embedded zero-width character creates a look-alike that eyeballs cannot distinguish.
+      sources: [UNICODE-TR36, UNICODE-UTS39]
+      edge_cases: [BORING-EDGE-TEXT-005, BORING-EDGE-TEXT-006, BORING-EDGE-TEXT-007]
+      related_rules: [BORING-INPUT-008]
+      verification:
+        automatable: partial
+        scenarios:
+          - given: two identifiers that are visually identical but differ by invisible characters
+            when: both are submitted to identifier-creation or lookup
+            expect:
+              - the documented policy decides; visual comparison alone is never the discriminator
+      tags: [invisible-characters, spoofing, decision-required]
+
+    - id: BORING-INPUT-008
+      title: Guard public identifiers against mixed-script and confusable spoofing
+      level: SHOULD
+      status: draft
+      summary: >
+        User-visible identifiers (usernames, handles, team names) should be
+        checked for mixed-script content and visual confusability, using
+        Unicode's security mechanisms, so that look-alike identities can be
+        detected and deliberately allowed or blocked.
+      why:
+        - Cyrillic а against Latin a is invisible to users and decisive in phishing and impersonation.
+        - UTS #39 defines confusable detection (skeleton comparison) and mixed-script detection (resolved script set) for exactly this purpose.
+      applies_when:
+        - Identifiers are global, public, or impersonation-relevant.
+      does_not_apply_when:
+        - Identifiers are internal or displayed alongside unambiguous context.
+      exceptions: []
+      failure_modes:
+        - A support scammer registers `paypa1-support` or a Cyrillic look-alike of a staff handle.
+      sources: [UNICODE-UTS39, UNICODE-TR36]
+      edge_cases: [BORING-EDGE-TEXT-009, BORING-EDGE-TEXT-010]
+      related_rules: [BORING-INPUT-007]
+      verification:
+        automatable: yes
+        scenarios:
+          - given: a proposed identifier whose skeleton matches an existing one, or whose scripts are mixed
+            when: registration or rename is attempted
+            expect:
+              - the application detects it and applies its documented allow/block policy
+      tags: [spoofing, impersonation]
+
+    - id: BORING-INPUT-009
+      title: Preserve bidirectional text and render it isolated
+      level: MUST
+      status: draft
+      summary: >
+        Right-to-left and bidirectional text must be stored intact (not stripped
+        or reordered) and rendered within directional isolates, so mixed-
+        direction content displays correctly and cannot visually reorder
+        adjacent application UI or logs.
+      why:
+        - Stripping bidi controls corrupts names and addresses written in RTL scripts; displaying user text without isolation lets bidi overrides reorganize surrounding UI text (a spoofing vector known as Trojan Source in code, and log-reordering in terminals).
+        - The Unicode Bidi Algorithm defines how mixed-direction text is ordered; isolates are its mechanism for scoping the effect.
+      applies_when:
+        - User text is stored and displayed in any language.
+      exceptions: []
+      failure_modes:
+        - An RTL name displays with its parts visually reversed in a Latin UI.
+        - A username containing bidi control characters reorders a "user X says:" line to attribute text to someone else.
+      sources: [UNICODE-UAX9, UNICODE-TR36]
+      edge_cases: [BORING-EDGE-TEXT-008]
+      related_rules: [BORING-INPUT-005]
+      verification:
+        automatable: partial
+        scenarios:
+          - given: user text containing RTL runs and bidi control characters
+            when: it is stored and rendered
+            expect:
+              - storage is byte-faithful; rendering applies isolates so the text cannot visually restructure surrounding UI
+      tags: [bidi, rtl, display]
+
+    - id: BORING-INPUT-010
+      title: Case-insensitive comparison must use case folding, not naive casing
+      level: SHOULD
+      status: draft
+      summary: >
+        When text is compared case-insensitively (emails, usernames, search),
+        comparison should use Unicode case folding; locale-sensitive casing
+        (notably Turkish I) must be applied only where locale is known and the
+        semantics are truly locale-specific.
+      why:
+        - Methods like toLowerCase() and toUpperCase() are locale-dependent transformations; the dotless-İ mapping makes naive comparisons wrong for Turkish text.
+        - Case folding is Unicode's defined mechanism for caseless matching (The Unicode Standard, casefold mappings).
+      applies_when:
+        - Text is compared, deduplicated, or searched case-insensitively.
+      exceptions: []
+      failure_modes:
+        - An email address containing `İ` (Turkish capital I with dot) normalizes differently under different locale settings, creating duplicate accounts or failed lookups.
+      sources: [UNICODE-STD]
+      edge_cases: [BORING-EDGE-TEXT-012]
+      related_rules: [BORING-INPUT-001]
+      verification:
+        automatable: partial
+        scenarios:
+          - given: strings that differ only by Turkish-I-class characters
+            when: case-insensitive comparison runs
+            expect:
+              - the comparison result is locale-independent and matches the documented policy
+      tags: [casing, locale, identity]
+
+    - id: BORING-INPUT-011
+      title: Parse numbers, dates, and structured values with explicit grammars
+      level: SHOULD
+      status: draft
+      summary: >
+        Numeric and temporal text should be parsed with explicit, tested
+        grammars — deciding leading zeros, plus signs, whitespace, locale
+        separators, exponent notation — rather than loose or homemade patterns;
+        rejected forms should fail with clear errors.
+      why:
+        - Forms like 010, +42, 1e5, 1.234,56, and " 42 " are accepted by some parsers and rejected by others; the ambiguity becomes corrupted amounts and off-by-1000 errors.
+        - Locale conventions (decimal comma vs point, thousand separators) are defined in CLDR; parsing them requires deliberate choices, not assumptions.
+      applies_when:
+        - Numbers, dates, or structured values arrive as text.
+      exceptions: []
+      failure_modes:
+        - An amount of `"1.234"` parsed as 1234 in one locale and 1.234 in another.
+        - A leading-zero ID silently parsed as octal or as a different number.
+      sources: [UNICODE-CLDR]
+      edge_cases: [BORING-EDGE-NUMBER-005, BORING-EDGE-NUMBER-007, BORING-EDGE-NUMBER-011]
+      related_rules: []
+      verification:
+        automatable: partial
+        scenarios:
+          - given: numeric strings in every documented form (padded, signed, exponent, locale separators)
+            when: they are parsed
+            expect:
+              - each form is accepted, normalized, or rejected exactly as the documented grammar specifies
+      tags: [parsing, numbers, locale]
+
+    - id: BORING-INPUT-012
+      title: Use maintained parsers for structured identifiers
+      level: SHOULD
+      status: draft
+      summary: >
+        Email addresses, URLs, and similar structured identifiers should be
+        parsed and validated with maintained implementations of their
+        specifications — not with homemade regexes; where specifications
+        conflict, the application should choose and document one deliberately.
+      why:
+        - Email syntax alone spans RFC 5321/5322 (dot-atoms, quoted local parts), internationalized addresses (RFC 6531 SMTPUTF8), and IDNA domains (RFC 5890, UTS #46); HTML defines a pragmatic subset as a willful violation of RFC 5322.
+        - Homemade regexes routinely reject valid addresses and accept malformed ones; the cost of a false rejection (locked-out user) exceeds the cost of accepting a syntactically-odd-but-deliverable address.
+      applies_when:
+        - Email addresses, URLs, handles, or similar identifiers are accepted.
+      exceptions: []
+      failure_modes:
+        - A "simple email regex" rejects quoted local parts, IDN domains, or addresses on single-label hosts — while accepting malformed input.
+        - URL validation misses scheme-relative (`//evil.example`) or embedded-credential forms.
+      sources: [RFC-5321, RFC-5322, RFC-6531, RFC-5890, WHATWG-HTML, WHATWG-URL, UNICODE-UTS46]
+      edge_cases: [BORING-EDGE-EMAIL-001, BORING-EDGE-EMAIL-004, BORING-EDGE-EMAIL-006, BORING-EDGE-EMAIL-009]
+      related_rules: [BORING-INPUT-010]
+      verification:
+        automatable: partial
+        scenarios:
+          - given: the application's address validation
+            when: exercised with valid-but-unusual and invalid-but-plausible addresses from the email edge-case dataset
+            expect:
+              - accept/reject decisions follow the documented policy; no homemade regex makes undocumented decisions
+      tags: [email, urls, parsing]

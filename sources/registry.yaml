@@ -1,0 +1,483 @@
+# Boring source registry
+#
+# Every external source referenced by a rule or edge case has exactly one
+# entry here. Tiers classify the *kind* of evidence (see docs/sources.md):
+#   1 standard | 2 authoritative-guidance | 3 vendor-docs
+#   4 corpus   | 5 incident-report         | 6 community
+# `accessed` records the date the content was last verified by a human.
+# All URLs below were verified live on 2026-09-04 during v0.1 research.
+
+# --- Tier 1: standards and specifications -------------------------------------
+
+- id: RFC-9110
+  title: HTTP Semantics (RFC 9110)
+  organization: IETF
+  type: standard
+  tier: 1
+  url: https://www.rfc-editor.org/rfc/rfc9110
+  topics: [http, methods, status-codes, idempotency]
+  accessed: "2026-09-04"
+  notes: >
+    Idempotent methods (§9.2.2) and 2xx success semantics (§15.3) anchor the
+    webhook delivery rules.
+
+- id: RFC-8259
+  title: The JavaScript Object Notation (JSON) Data Interchange Format (RFC 8259)
+  organization: IETF
+  type: standard
+  tier: 1
+  url: https://www.rfc-editor.org/rfc/rfc8259
+  topics: [json, payloads, numbers]
+  accessed: "2026-09-04"
+  notes: >
+    Numbers that cannot be represented (NaN, Infinity) are not permitted (§6);
+    object member names SHOULD be unique (§4).
+
+- id: RFC-8725
+  title: Best Current Practices for JSON Web Tokens (RFC 8725)
+  organization: IETF
+  type: standard
+  tier: 1
+  url: https://www.rfc-editor.org/rfc/rfc8725
+  topics: [jwt, tokens, sessions]
+  accessed: "2026-09-04"
+  notes: >
+    Algorithm and claim validation requirements for JWT-based sessions.
+
+- id: RFC-3339
+  title: "Date and Time on the Internet: Timestamps (RFC 3339)"
+  organization: IETF
+  type: standard
+  tier: 1
+  url: https://www.rfc-editor.org/rfc/rfc3339
+  topics: [timestamps, time]
+  accessed: "2026-09-04"
+  notes: >
+    Timestamp grammar (§5.6): Z denotes UTC offset zero (§2); -00:00 signals
+    unknown local offset (§4.3); time-second may be 60 at leap seconds
+    (§5.6, §5.7); a space may replace T by NOTE.
+
+- id: RFC-5321
+  title: Simple Mail Transfer Protocol (RFC 5321)
+  organization: IETF
+  type: standard
+  tier: 1
+  url: https://www.rfc-editor.org/rfc/rfc5321
+  topics: [email, smtp]
+  accessed: "2026-09-04"
+  notes: >
+    Local-part limit 64 octets (§4.5.3.1.1), path limit 256 octets
+    (§4.5.3.1.3), address literals (§4.1.3); local-part case sensitivity
+    (§2.4) and its interoperability warning.
+
+- id: RFC-5322
+  title: Internet Message Format (RFC 5322)
+  organization: IETF
+  type: standard
+  tier: 1
+  url: https://www.rfc-editor.org/rfc/rfc5322
+  topics: [email, syntax]
+  accessed: "2026-09-04"
+  notes: >
+    dot-atom syntax (§3.2.3), quoted-string local parts and display names
+    (§3.4.1).
+
+- id: RFC-6531
+  title: SMTP Extension for Internationalized Email (SMTPUTF8) (RFC 6531)
+  organization: IETF
+  type: standard
+  tier: 1
+  url: https://www.rfc-editor.org/rfc/rfc6531
+  topics: [email, internationalization]
+  accessed: "2026-09-04"
+  notes: >
+    Unicode local parts require end-to-end SMTPUTF8 support (§3.2, §3.4).
+
+- id: RFC-5890
+  title: "Internationalized Domain Names for Applications (IDNA): Definitions and Document Framework (RFC 5890)"
+  organization: IETF
+  type: standard
+  tier: 1
+  url: https://www.rfc-editor.org/rfc/rfc5890
+  topics: [domains, idn, email]
+  accessed: "2026-09-04"
+  notes: >
+    A-labels with xn-- prefix (§2.3.2.1); the 63-octet DNS limit applies to
+    A-labels (§2.3.1).
+
+- id: UNICODE-UAX15
+  title: Unicode Normalization Forms (UAX #15)
+  organization: Unicode Consortium
+  type: standard
+  tier: 1
+  url: https://www.unicode.org/reports/tr15/
+  topics: [unicode, normalization, text]
+  accessed: "2026-09-04"
+  notes: >
+    NFC/NFD/NFKC/NFKD (§1.2); canonical equivalence (§1.1); normalization not
+    closed under concatenation (§1.4).
+
+- id: UNICODE-UAX29
+  title: Unicode Text Segmentation (UAX #29)
+  organization: Unicode Consortium
+  type: standard
+  tier: 1
+  url: https://www.unicode.org/reports/tr29/
+  topics: [unicode, graphemes, text]
+  accessed: "2026-09-04"
+  notes: >
+    Extended grapheme clusters approximate user-perceived characters (§3);
+    emoji ZWJ sequences are single grapheme clusters (GB11); regional
+    indicator pairs (GB12/GB13).
+
+- id: UNICODE-UAX9
+  title: Unicode Bidirectional Algorithm (UAX #9)
+  organization: Unicode Consortium
+  type: standard
+  tier: 1
+  url: https://www.unicode.org/reports/tr9/
+  topics: [unicode, bidi, rtl]
+  accessed: "2026-09-04"
+  notes: >
+    Ordering of mixed-direction text; isolates as the scoping mechanism.
+
+- id: UNICODE-UTS39
+  title: Unicode Security Mechanisms (UTS #39)
+  organization: Unicode Consortium
+  type: standard
+  tier: 1
+  url: https://www.unicode.org/reports/tr39/
+  topics: [unicode, security, identifiers]
+  accessed: "2026-09-04"
+  notes: >
+    Confusable detection via skeleton comparison (§4); mixed-script detection
+    (§5.1); identifier restrictions, including ZWJ/ZWNJ (§3.1, §7).
+
+- id: UNICODE-TR36
+  title: Unicode Security Considerations (UTS #36, tr36-15)
+  organization: Unicode Consortium
+  type: standard
+  tier: 1
+  url: https://www.unicode.org/reports/tr36/tr36-15.html
+  topics: [unicode, security, text]
+  accessed: "2026-09-04"
+  notes: >
+    Invisible characters affecting rendering (§2.4); non-visual bypasses when
+    components treat text as identical after transformation (§3); visual
+    spoofing via confusables (§2). Note: the canonical tr36 URL now serves a
+    stabilization notice; the maintained text is at tr36-15.html.
+
+- id: UNICODE-UTS46
+  title: Unicode IDNA Compatibility Processing (UTS #46)
+  organization: Unicode Consortium
+  type: standard
+  tier: 1
+  url: https://www.unicode.org/reports/tr46/
+  topics: [domains, idn, unicode]
+  accessed: "2026-09-04"
+  notes: >
+    Compatibility mapping for IDNA2008 (§2); transitional vs nontransitional
+    processing differs only on the four Deviation characters (§1.3.2).
+
+- id: UNICODE-STD
+  title: The Unicode Standard (core specification)
+  organization: Unicode Consortium
+  type: standard
+  tier: 1
+  url: https://www.unicode.org/versions/latest/
+  topics: [unicode, casing, text]
+  accessed: "2026-09-04"
+  notes: >
+    Case folding for caseless matching; code point semantics.
+
+- id: UNICODE-CLDR
+  title: Unicode Common Locale Data Repository (CLDR)
+  organization: Unicode Consortium
+  type: standard
+  tier: 1
+  url: https://cldr.unicode.org/
+  topics: [locale, numbers, internationalization]
+  accessed: "2026-09-04"
+  notes: >
+    Locale conventions for number formatting and parsing (decimal separators,
+    grouping).
+
+- id: IANA-TZDB
+  title: IANA Time Zone Database
+  organization: IANA
+  type: standard
+  tier: 1
+  url: https://www.iana.org/time-zones
+  topics: [time, timezones]
+  accessed: "2026-09-04"
+  notes: >
+    History and rules of local time for worldwide locations; "updated
+    periodically to reflect changes made by political bodies to time zone
+    boundaries, UTC offsets, and daylight-saving rules"; "current predictions
+    will be incorrect after future governments change the rules".
+
+- id: WHATWG-HTML
+  title: HTML Standard (WHATWG)
+  organization: WHATWG
+  type: standard
+  tier: 1
+  url: https://html.spec.whatwg.org/multipage/
+  topics: [web-platform, email, forms]
+  accessed: "2026-09-04"
+  notes: >
+    input type=email validation (§4.10.5.1.5): a willful violation of RFC
+    5322 with a defined regex that accepts single-label domains.
+
+- id: WHATWG-URL
+  title: URL Standard (WHATWG)
+  organization: WHATWG
+  type: standard
+  tier: 1
+  url: https://url.spec.whatwg.org/
+  topics: [urls, web-platform]
+  accessed: "2026-09-04"
+  notes: >
+    Canonical URL parsing model, including scheme-relative and
+    embedded-credential forms.
+
+# --- Tier 2: authoritative application guidance --------------------------------
+
+- id: OWASP-ASVS
+  title: OWASP Application Security Verification Standard (ASVS) 5.0.0
+  organization: OWASP
+  type: authoritative-guidance
+  tier: 2
+  url: https://owasp.org/www-project-application-security-verification-standard/
+  topics: [authentication, sessions, security]
+  accessed: "2026-09-04"
+  notes: >
+    Released 30 May 2025. V6 Authentication (credential reset, notifications
+    6.3.7/6.3.8/6.4.3), V7 Session Management (timeouts 7.3.1/7.3.2, session
+    termination 7.4.x, user session control 7.5.2), V9 Self-contained Tokens.
+
+- id: OWASP-FORGOT-PASSWORD
+  title: OWASP Forgot Password Cheat Sheet
+  organization: OWASP
+  type: authoritative-guidance
+  tier: 2
+  url: https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+  topics: [authentication, password-reset]
+  accessed: "2026-09-04"
+  notes: >
+    Primary source for the password-reset spec: enumeration resistance,
+    token generation/expiry/single-use/storage, throttling, notifications,
+    session invalidation, password policy on reset.
+
+- id: OWASP-AUTHENTICATION
+  title: OWASP Authentication Cheat Sheet
+  organization: OWASP
+  type: authoritative-guidance
+  tier: 2
+  url: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+  topics: [authentication, passwords]
+  accessed: "2026-09-04"
+  notes: >
+    Generic error messages, password length/composition/blocklist guidance,
+    re-authentication for sensitive features.
+
+- id: OWASP-SESSION-MANAGEMENT
+  title: OWASP Session Management Cheat Sheet
+  organization: OWASP
+  type: authoritative-guidance
+  tier: 2
+  url: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+  topics: [sessions, cookies]
+  accessed: "2026-09-04"
+  notes: >
+    Primary source for the sessions spec: ≥64-bit entropy, cookie attributes,
+    renewal on authentication and privilege change, server-side logout,
+    timeout ranges (idle 15-30 min low-risk / 2-5 min high-value; absolute
+    4-8 h), no URL-based identifiers, user session control.
+
+- id: OWASP-CSRF
+  title: OWASP Cross-Site Request Forgery Prevention Cheat Sheet
+  organization: OWASP
+  type: authoritative-guidance
+  tier: 2
+  url: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+  topics: [csrf, cookies, sessions]
+  accessed: "2026-09-04"
+  notes: >
+    SameSite's role as a defense layer complementary to CSRF countermeasures.
+
+- id: OWASP-FILE-UPLOAD
+  title: OWASP File Upload Cheat Sheet
+  organization: OWASP
+  type: authoritative-guidance
+  tier: 2
+  url: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+  topics: [file-uploads, validation]
+  accessed: "2026-09-04"
+  notes: >
+    Primary source for the file-uploads spec: extension allowlists,
+    content-vs-declared-type warnings, validation after decoding, randomized
+    storage names ("essential"), protected storage locations, read access
+    control "a must", size limits, zip bombs, archive handling, AV/sandbox
+    advice. Note: it does not cover serving headers (Content-Disposition,
+    nosniff) or image decompression bombs — those carry MDN citations or
+    field-knowledge flags.
+
+- id: OWASP-INPUT-VALIDATION
+  title: OWASP Input Validation Cheat Sheet
+  organization: OWASP
+  type: authoritative-guidance
+  tier: 2
+  url: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+  topics: [validation, input]
+  accessed: "2026-09-04"
+  notes: >
+    Validate all potentially untrusted input as early as possible; allowlist
+    over denylist; canonical encoding across text; free-form Unicode text
+    (links UAX #15). Note: "validation after decoding" wording lives in the
+    File Upload sheet, not here.
+
+- id: OWASP-PASSWORD-STORAGE
+  title: OWASP Password Storage Cheat Sheet
+  organization: OWASP
+  type: authoritative-guidance
+  tier: 2
+  url: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+  topics: [passwords, storage, cryptography]
+  accessed: "2026-09-04"
+  notes: >
+    Salted, slow hashing (Argon2id, bcrypt, PBKDF2), work factors — applied
+    in Boring to reset-token storage.
+
+- id: OWASP-WSTG
+  title: OWASP Web Security Testing Guide (WSTG)
+  organization: OWASP
+  type: authoritative-guidance
+  tier: 2
+  url: https://owasp.org/www-project-web-security-testing-guide/
+  topics: [testing, redirects, web]
+  accessed: "2026-09-04"
+  notes: >
+    Standard test taxonomy; referenced for unvalidated redirect testing and
+    general verification approaches.
+
+- id: NIST-800-63B
+  title: "NIST Special Publication 800-63B (Digital Identity Guidelines: Authentication and Authenticator Management), Revision 4"
+  organization: NIST
+  type: authoritative-guidance
+  tier: 2
+  url: https://pages.nist.gov/800-63-4/sp800-63b.html
+  topics: [passwords, authentication, policy]
+  accessed: "2026-09-04"
+  notes: >
+    Final Rev 4 (July 2025) supersedes 800-63B (Rev 3:
+    https://pages.nist.gov/800-63-3/sp800-63b.html). Password minimums
+    (15 single-factor / 8 with MFA), SHOULD allow ≥64 chars and all printing
+    ASCII/Unicode with each code point counted as one character, SHALL NOT
+    composition rules, SHALL blocklist breached passwords, SHALL rate-limit
+    failed attempts. Rev 3 retained for readers on the earlier revision.
+
+# --- Tier 3: official vendor behavior -------------------------------------------
+
+- id: STRIPE-WEBHOOK-DOCS
+  title: Stripe Webhooks documentation
+  organization: Stripe
+  type: vendor-docs
+  tier: 3
+  url: https://docs.stripe.com/webhooks
+  topics: [webhooks, delivery, signatures]
+  accessed: "2026-09-04"
+  notes: >
+    At-least-once delivery and duplicates; no ordering guarantee ("Don't use
+    created to determine event order"); retries up to three days with
+    exponential backoff; 2xx = delivered, redirects are failures; Stripe-
+    Signature scheme (t= timestamp, v1 HMAC-SHA256, constant-time comparison);
+    5-minute default replay tolerance; 2xx-before-logic best practice; secret
+    rolling with previous secret active up to 24 hours.
+
+- id: STRIPE-IDEMPOTENCY
+  title: Stripe Idempotent Requests documentation
+  organization: Stripe
+  type: vendor-docs
+  tier: 3
+  url: https://docs.stripe.com/api/idempotent_requests
+  topics: [idempotency, webhooks, api-design]
+  accessed: "2026-09-04"
+  notes: >
+    Request-side idempotency mechanics ("safely retrying requests without
+    accidentally performing the same operation twice") — supporting evidence
+    for consumer-side idempotency design.
+
+- id: GITHUB-WEBHOOK-DOCS
+  title: GitHub — Best practices for using webhooks
+  organization: GitHub
+  type: vendor-docs
+  tier: 3
+  url: https://docs.github.com/en/webhooks/using-webhooks/best-practices-for-using-webhooks
+  topics: [webhooks, delivery]
+  accessed: "2026-09-04"
+  notes: >
+    2xx within 10 seconds or the delivery fails; X-GitHub-Delivery identifies
+    deliveries (same value on manual redelivery); redeliver missed webhooks
+    after downtime; async queue processing.
+
+- id: GITHUB-WEBHOOK-VALIDATION
+  title: GitHub — Validating webhook deliveries
+  organization: GitHub
+  type: vendor-docs
+  tier: 3
+  url: https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
+  topics: [webhooks, signatures]
+  accessed: "2026-09-04"
+  notes: >
+    X-Hub-Signature-256 (HMAC-SHA256, sha256= prefix) validation guidance.
+
+- id: MDN-CONTENT-DISPOSITION
+  title: MDN — Content-Disposition header
+  organization: Mozilla
+  type: vendor-docs
+  tier: 3
+  url: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
+  topics: [file-uploads, serving, http]
+  accessed: "2026-09-04"
+  notes: >
+    attachment disposition semantics for serving user content safely.
+
+- id: MDN-XCONTENTTYPE
+  title: MDN — X-Content-Type-Options header (nosniff)
+  organization: Mozilla
+  type: vendor-docs
+  tier: 3
+  url: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options
+  topics: [file-uploads, serving, http]
+  accessed: "2026-09-04"
+  notes: >
+    nosniff semantics preventing MIME-type sniffing of served content.
+
+# --- Tier 4: established corpora / test suites ----------------------------------
+
+- id: BLNS
+  title: Big List of Naughty Strings
+  organization: minimaxir (GitHub)
+  type: corpus
+  tier: 4
+  url: https://github.com/minimaxir/big-list-of-naughty-strings
+  topics: [text, testing, unicode]
+  license: MIT
+  accessed: "2026-09-04"
+  notes: >
+    "A list of strings which have a high probability of causing issues when
+    used as user-input data." Used to discover categories and find omissions;
+    Boring's datasets are original representations, not imports.
+
+- id: WPT
+  title: Web Platform Tests
+  organization: web-platform-tests contributors (GitHub)
+  type: corpus
+  tier: 4
+  url: https://github.com/web-platform-tests/wpt
+  topics: [web-platform, testing]
+  license: BSD-3-Clause
+  accessed: "2026-09-04"
+  notes: >
+    Cross-browser test suite for the Web platform stack (WHATWG, W3C specs) —
+    reference for how specifications become executable tests.
